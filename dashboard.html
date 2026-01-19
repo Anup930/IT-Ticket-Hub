@@ -22,12 +22,12 @@
     .list-group-item:hover { color: #fff; background: rgba(255,255,255,0.05); }
     .list-group-item.active { background-color: #dc3545; color: #fff; font-weight: 600; }
 
-    /* Dashboard Cards */
+    /* Cards */
     .kpi-card { border: none; border-radius: 12px; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.05); transition: transform 0.2s; }
     .kpi-card:hover { transform: translateY(-3px); }
     .icon-box { width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
 
-    /* Chart Containers */
+    /* Charts */
     .chart-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); height: 100%; border: none; }
     
     /* Tables */
@@ -56,9 +56,33 @@
         <h3 class="fw-bold text-dark m-0">Analytics Overview</h3>
         <small class="text-muted">Real-time insights from Google Sheets</small>
       </div>
+      
       <button class="btn btn-outline-primary btn-sm" onclick="fetchData()">
         <i class="fas fa-sync-alt me-2"></i> Refresh Data
       </button>
+    </div>
+
+    <div class="card p-3 mb-4 shadow-sm border-0">
+      <div class="row g-2 align-items-end">
+        <div class="col-auto">
+          <label class="small fw-bold text-muted">From Date:</label>
+          <input type="date" id="dateStart" class="form-control form-control-sm">
+        </div>
+        <div class="col-auto">
+          <label class="small fw-bold text-muted">To Date:</label>
+          <input type="date" id="dateEnd" class="form-control form-control-sm">
+        </div>
+        <div class="col-auto">
+          <button class="btn btn-primary btn-sm px-3" onclick="applyDateFilter()">
+            <i class="fas fa-filter me-2"></i> Apply Filter
+          </button>
+        </div>
+        <div class="col-auto">
+          <button class="btn btn-outline-secondary btn-sm px-3" onclick="resetFilters()">
+            Reset
+          </button>
+        </div>
+      </div>
     </div>
 
     <div class="row g-3 mb-4">
@@ -112,7 +136,7 @@
     <div class="row g-3 mb-4">
       <div class="col-12">
         <div class="chart-card">
-          <h6 class="fw-bold text-dark mb-3"><i class="fas fa-stopwatch me-2 text-info"></i>Resolution Time Analysis (Time to Resolve)</h6>
+          <h6 class="fw-bold text-dark mb-3"><i class="fas fa-stopwatch me-2 text-info"></i>Resolution Time Analysis</h6>
           <div style="height: 300px;">
             <canvas id="resolutionChart"></canvas>
           </div>
@@ -152,7 +176,9 @@
   const role = sessionStorage.getItem('role');
   if(role !== 'Admin') window.location.href = 'index.html';
 
+  // Global variables to store charts and data
   let statusChartInstance, priorityChartInstance, subjectChartInstance, resolutionChartInstance;
+  let allTicketsData = []; // Store raw data here
 
   window.onload = fetchData;
 
@@ -161,14 +187,48 @@
       .then(res => res.json())
       .then(data => {
         if(data && data.length > 0) {
-          calculateKPIs(data);
-          renderCharts(data);
-          renderUrgentTable(data);
+          allTicketsData = data; // Save to global variable
+          applyDateFilter();     // Initial render (shows all if no date selected)
         }
       })
       .catch(err => console.error("Error fetching data:", err));
   }
 
+  // --- NEW: FILTER LOGIC ---
+  function applyDateFilter() {
+    const startVal = document.getElementById('dateStart').value;
+    const endVal = document.getElementById('dateEnd').value;
+    
+    let filteredData = allTicketsData;
+
+    if (startVal || endVal) {
+      const startDate = startVal ? new Date(startVal) : new Date('2000-01-01');
+      const endDate = endVal ? new Date(endVal) : new Date(); // Default to today if empty
+      
+      // Set time to end of day for the "To" date to include tickets created on that day
+      endDate.setHours(23, 59, 59, 999);
+      startDate.setHours(0, 0, 0, 0);
+
+      filteredData = allTicketsData.filter(t => {
+        if (!t.createdRaw) return false;
+        const ticketDate = new Date(t.createdRaw);
+        return ticketDate >= startDate && ticketDate <= endDate;
+      });
+    }
+
+    // Render dashboard with filtered data
+    calculateKPIs(filteredData);
+    renderCharts(filteredData);
+    renderUrgentTable(filteredData);
+  }
+
+  function resetFilters() {
+    document.getElementById('dateStart').value = '';
+    document.getElementById('dateEnd').value = '';
+    applyDateFilter(); // Reloads all data
+  }
+
+  // --- EXISTING LOGIC (Same as before, just uses passed 'data') ---
   function calculateKPIs(data) {
     const total = data.length;
     const pending = data.filter(t => t.status !== 'Resolved' && t.status !== 'Closed').length;
@@ -180,12 +240,11 @@
 
     document.getElementById('kpiTotal').innerText = total;
     document.getElementById('kpiPending').innerText = pending;
-    document.getElementById('kpiRate').innerText = Math.round((resolved / total) * 100) + "%";
+    document.getElementById('kpiRate').innerText = total > 0 ? Math.round((resolved / total) * 100) + "%" : "0%";
     document.getElementById('kpiCsat').innerText = avgRating;
   }
 
   function renderCharts(data) {
-    // 1. Existing Charts Data Prep
     const statusCounts = { 'New': 0, 'In Progress': 0, 'Pending': 0, 'Resolved': 0, 'Closed': 0 };
     const prioCounts = { 'High': 0, 'Medium': 0, 'Low': 0 };
     const subjCounts = {};
@@ -197,34 +256,16 @@
       subjCounts[s] = (subjCounts[s] || 0) + 1;
     });
 
-    // --- NEW: RESOLUTION TIME BUCKETS ---
-    const timeBuckets = {
-      '< 30 Min': 0,
-      '30m - 1h': 0,
-      '1h - 3h': 0,
-      '3h - 6h': 0,
-      '6h - 12h': 0,
-      '12h - 24h': 0,
-      '1 - 2 Days': 0,
-      '2 - 5 Days': 0,
-      '5 - 7 Days': 0,
-      '> 7 Days': 0
-    };
+    const timeBuckets = { '< 30 Min': 0, '30m - 1h': 0, '1h - 3h': 0, '3h - 6h': 0, '6h - 12h': 0, '12h - 24h': 0, '1 - 2 Days': 0, '2 - 5 Days': 0, '5 - 7 Days': 0, '> 7 Days': 0 };
 
     data.forEach(t => {
-      // Only check Resolved/Closed tickets that have both dates
       if((t.status === 'Resolved' || t.status === 'Closed') && t.createdRaw && t.updatedRaw) {
-        const start = new Date(t.createdRaw);
-        const end = new Date(t.updatedRaw);
-        
-        // Calculate difference in Minutes
-        const diffMs = end - start;
+        const diffMs = new Date(t.updatedRaw) - new Date(t.createdRaw);
         const minutes = diffMs / (1000 * 60);
         const hours = minutes / 60;
         const days = hours / 24;
 
-        if (minutes < 0) return; // Error case
-
+        if (minutes < 0) return;
         if (minutes <= 30) timeBuckets['< 30 Min']++;
         else if (minutes <= 60) timeBuckets['30m - 1h']++;
         else if (hours <= 3) timeBuckets['1h - 3h']++;
@@ -238,65 +279,42 @@
       }
     });
 
-    // --- RENDER 1: Status Chart ---
-    const ctx1 = document.getElementById('statusChart').getContext('2d');
+    // Destroy old charts before creating new ones
     if(statusChartInstance) statusChartInstance.destroy();
+    if(priorityChartInstance) priorityChartInstance.destroy();
+    if(subjectChartInstance) subjectChartInstance.destroy();
+    if(resolutionChartInstance) resolutionChartInstance.destroy();
+
+    // Chart 1: Status
+    const ctx1 = document.getElementById('statusChart').getContext('2d');
     statusChartInstance = new Chart(ctx1, {
       type: 'doughnut',
-      data: {
-        labels: Object.keys(statusCounts),
-        datasets: [{ data: Object.values(statusCounts), backgroundColor: ['#0dcaf0', '#ffc107', '#fd7e14', '#198754', '#6c757d'], borderWidth: 0 }]
-      },
+      data: { labels: Object.keys(statusCounts), datasets: [{ data: Object.values(statusCounts), backgroundColor: ['#0dcaf0', '#ffc107', '#fd7e14', '#198754', '#6c757d'], borderWidth: 0 }] },
       options: { responsive: true, cutout: '70%', plugins: { legend: { position: 'right' } } }
     });
 
-    // --- RENDER 2: Priority Chart ---
+    // Chart 2: Priority
     const ctx2 = document.getElementById('priorityChart').getContext('2d');
-    if(priorityChartInstance) priorityChartInstance.destroy();
     priorityChartInstance = new Chart(ctx2, {
       type: 'bar',
-      data: {
-        labels: Object.keys(prioCounts),
-        datasets: [{ label: 'Tickets', data: Object.values(prioCounts), backgroundColor: ['#dc3545', '#ffc107', '#0d6efd'], borderRadius: 5 }]
-      },
+      data: { labels: Object.keys(prioCounts), datasets: [{ label: 'Tickets', data: Object.values(prioCounts), backgroundColor: ['#dc3545', '#ffc107', '#0d6efd'], borderRadius: 5 }] },
       options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
     });
 
-    // --- RENDER 3: Subject Chart ---
+    // Chart 3: Subject
     const ctx3 = document.getElementById('subjectChart').getContext('2d');
-    if(subjectChartInstance) subjectChartInstance.destroy();
     subjectChartInstance = new Chart(ctx3, {
       type: 'bar',
-      data: {
-        labels: Object.keys(subjCounts),
-        datasets: [{ label: 'Count', data: Object.values(subjCounts), backgroundColor: '#6610f2', borderRadius: 5 }]
-      },
+      data: { labels: Object.keys(subjCounts), datasets: [{ label: 'Count', data: Object.values(subjCounts), backgroundColor: '#6610f2', borderRadius: 5 }] },
       options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } } }
     });
 
-    // --- RENDER 4: Resolution Time Chart (NEW) ---
+    // Chart 4: Resolution Time
     const ctx4 = document.getElementById('resolutionChart').getContext('2d');
-    if(resolutionChartInstance) resolutionChartInstance.destroy();
     resolutionChartInstance = new Chart(ctx4, {
       type: 'bar',
-      data: {
-        labels: Object.keys(timeBuckets),
-        datasets: [{ 
-          label: 'Tickets Resolved', 
-          data: Object.values(timeBuckets), 
-          backgroundColor: '#20c997', // Teal color
-          borderRadius: 4
-        }]
-      },
-      options: { 
-        responsive: true, 
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: { 
-          y: { beginAtZero: true, title: {display: true, text: 'Number of Tickets'} },
-          x: { grid: { display: false } }
-        } 
-      }
+      data: { labels: Object.keys(timeBuckets), datasets: [{ label: 'Tickets Resolved', data: Object.values(timeBuckets), backgroundColor: '#20c997', borderRadius: 4 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true }, x: { grid: { display: false } } } }
     });
   }
 
