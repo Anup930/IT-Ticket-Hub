@@ -9,26 +9,18 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
   <style>
-    :root { 
-      --sidebar-width: 260px; 
-      --sidebar-bg: #1e293b; 
-      --bg-color: #f8f9fa; 
-    }
-    
+    :root { --sidebar-width: 260px; --sidebar-bg: #1e293b; --bg-color: #f8f9fa; }
     body { background-color: var(--bg-color); font-family: 'Segoe UI', sans-serif; overflow-x: hidden; }
 
-    /* Sidebar Structure (Same as Admin) */
+    /* Layout */
     #wrapper { display: flex; width: 100%; min-height: 100vh; }
-    #sidebar-wrapper {
-      min-height: 100vh; width: var(--sidebar-width); background-color: var(--sidebar-bg); color: #fff;
-      position: fixed; left: 0; top: 0; z-index: 1000;
-    }
+    #sidebar-wrapper { min-height: 100vh; width: var(--sidebar-width); background-color: var(--sidebar-bg); color: #fff; position: fixed; left: 0; top: 0; z-index: 1000; }
     #page-content-wrapper { width: 100%; margin-left: var(--sidebar-width); padding: 20px; }
 
     .sidebar-heading { padding: 1.5rem; font-size: 1.25rem; font-weight: bold; color: #fff; background: rgba(0,0,0,0.1); }
-    .list-group-item { border: none; background: transparent; color: #94a3b8; padding: 14px 25px; cursor: pointer; transition: 0.2s; }
+    .list-group-item { border: none; background: transparent; color: #94a3b8; padding: 14px 25px; cursor: pointer; text-decoration: none; display: block; }
     .list-group-item:hover { color: #fff; background: rgba(255,255,255,0.05); }
-    .list-group-item.active { background-color: #dc3545; color: #fff; font-weight: 600; } /* Red for Admin */
+    .list-group-item.active { background-color: #dc3545; color: #fff; font-weight: 600; }
 
     /* Dashboard Cards */
     .kpi-card { border: none; border-radius: 12px; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.05); transition: transform 0.2s; }
@@ -50,18 +42,10 @@
   <div id="sidebar-wrapper">
     <div class="sidebar-heading"><i class="fas fa-chart-line me-2"></i> IT Admin Hub</div>
     <div class="list-group list-group-flush mt-3">
-      <a href="dashboard.html" class="list-group-item active">
-        <i class="fas fa-th-large me-3"></i> Dashboard
-      </a>
-      <a href="admin.html" class="list-group-item">
-        <i class="fas fa-ticket-alt me-3"></i> Ticket Management
-      </a>
-      <a href="notification.html" class="list-group-item">
-        <i class="fas fa-bell me-3"></i> Notifications
-      </a>
-      <a onclick="logout()" class="list-group-item text-danger mt-5">
-        <i class="fas fa-sign-out-alt me-3"></i> Logout
-      </a>
+      <a href="dashboard.html" class="list-group-item active"><i class="fas fa-th-large me-3"></i> Dashboard</a>
+      <a href="admin.html" class="list-group-item"><i class="fas fa-ticket-alt me-3"></i> Ticket Management</a>
+      <a href="notification.html" class="list-group-item"><i class="fas fa-bell me-3"></i> Notifications</a>
+      <a onclick="logout()" class="list-group-item text-danger mt-5"><i class="fas fa-sign-out-alt me-3"></i> Logout</a>
     </div>
   </div>
 
@@ -125,6 +109,17 @@
       </div>
     </div>
 
+    <div class="row g-3 mb-4">
+      <div class="col-12">
+        <div class="chart-card">
+          <h6 class="fw-bold text-dark mb-3"><i class="fas fa-stopwatch me-2 text-info"></i>Resolution Time Analysis (Time to Resolve)</h6>
+          <div style="height: 300px;">
+            <canvas id="resolutionChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="row g-3">
       <div class="col-12">
         <div class="chart-card h-auto">
@@ -150,16 +145,14 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
-  // *** API URL ***
+  // *** REPLACE WITH YOUR API URL ***
   const API_URL = "https://script.google.com/macros/s/AKfycbxnr626khgFH_xJgcGnw8NgIyPRhBJeaqBIRmxTj2FRqd8swt5hbSeanh70EaD7icRp/exec";
 
   const userId = sessionStorage.getItem('userId');
   const role = sessionStorage.getItem('role');
-  
-  // Security Check
   if(role !== 'Admin') window.location.href = 'index.html';
 
-  let statusChartInstance, priorityChartInstance, subjectChartInstance;
+  let statusChartInstance, priorityChartInstance, subjectChartInstance, resolutionChartInstance;
 
   window.onload = fetchData;
 
@@ -178,22 +171,13 @@
 
   function calculateKPIs(data) {
     const total = data.length;
-    // Pending = Not Resolved AND Not Closed
     const pending = data.filter(t => t.status !== 'Resolved' && t.status !== 'Closed').length;
     const resolved = data.filter(t => t.status === 'Resolved' || t.status === 'Closed').length;
     
-    // Calculate CSAT (Average Rating)
-    let totalRating = 0;
-    let ratedTickets = 0;
-    data.forEach(t => {
-      if(t.rating && t.rating > 0) {
-        totalRating += parseInt(t.rating);
-        ratedTickets++;
-      }
-    });
+    let totalRating = 0, ratedTickets = 0;
+    data.forEach(t => { if(t.rating && t.rating > 0) { totalRating += parseInt(t.rating); ratedTickets++; } });
     const avgRating = ratedTickets > 0 ? (totalRating / ratedTickets).toFixed(1) : "N/A";
 
-    // Update DOM
     document.getElementById('kpiTotal').innerText = total;
     document.getElementById('kpiPending').innerText = pending;
     document.getElementById('kpiRate').innerText = Math.round((resolved / total) * 100) + "%";
@@ -201,102 +185,128 @@
   }
 
   function renderCharts(data) {
-    // 1. Prepare Data for Status Chart
+    // 1. Existing Charts Data Prep
     const statusCounts = { 'New': 0, 'In Progress': 0, 'Pending': 0, 'Resolved': 0, 'Closed': 0 };
-    data.forEach(t => { if(statusCounts[t.status] !== undefined) statusCounts[t.status]++; });
-
-    // 2. Prepare Data for Priority Chart
     const prioCounts = { 'High': 0, 'Medium': 0, 'Low': 0 };
-    data.forEach(t => { if(prioCounts[t.priority] !== undefined) prioCounts[t.priority]++; });
-
-    // 3. Prepare Data for Subject Chart
     const subjCounts = {};
+
     data.forEach(t => {
+      if(statusCounts[t.status] !== undefined) statusCounts[t.status]++;
+      if(prioCounts[t.priority] !== undefined) prioCounts[t.priority]++;
       const s = t.subject || "Other";
       subjCounts[s] = (subjCounts[s] || 0) + 1;
     });
 
-    // --- RENDER STATUS CHART (Doughnut) ---
+    // --- NEW: RESOLUTION TIME BUCKETS ---
+    const timeBuckets = {
+      '< 30 Min': 0,
+      '30m - 1h': 0,
+      '1h - 3h': 0,
+      '3h - 6h': 0,
+      '6h - 12h': 0,
+      '12h - 24h': 0,
+      '1 - 2 Days': 0,
+      '2 - 5 Days': 0,
+      '5 - 7 Days': 0,
+      '> 7 Days': 0
+    };
+
+    data.forEach(t => {
+      // Only check Resolved/Closed tickets that have both dates
+      if((t.status === 'Resolved' || t.status === 'Closed') && t.createdRaw && t.updatedRaw) {
+        const start = new Date(t.createdRaw);
+        const end = new Date(t.updatedRaw);
+        
+        // Calculate difference in Minutes
+        const diffMs = end - start;
+        const minutes = diffMs / (1000 * 60);
+        const hours = minutes / 60;
+        const days = hours / 24;
+
+        if (minutes < 0) return; // Error case
+
+        if (minutes <= 30) timeBuckets['< 30 Min']++;
+        else if (minutes <= 60) timeBuckets['30m - 1h']++;
+        else if (hours <= 3) timeBuckets['1h - 3h']++;
+        else if (hours <= 6) timeBuckets['3h - 6h']++;
+        else if (hours <= 12) timeBuckets['6h - 12h']++;
+        else if (hours <= 24) timeBuckets['12h - 24h']++;
+        else if (days <= 2) timeBuckets['1 - 2 Days']++;
+        else if (days <= 5) timeBuckets['2 - 5 Days']++;
+        else if (days <= 7) timeBuckets['5 - 7 Days']++;
+        else timeBuckets['> 7 Days']++;
+      }
+    });
+
+    // --- RENDER 1: Status Chart ---
     const ctx1 = document.getElementById('statusChart').getContext('2d');
     if(statusChartInstance) statusChartInstance.destroy();
     statusChartInstance = new Chart(ctx1, {
       type: 'doughnut',
       data: {
         labels: Object.keys(statusCounts),
-        datasets: [{
-          data: Object.values(statusCounts),
-          backgroundColor: ['#0dcaf0', '#ffc107', '#fd7e14', '#198754', '#6c757d'],
-          borderWidth: 0
-        }]
+        datasets: [{ data: Object.values(statusCounts), backgroundColor: ['#0dcaf0', '#ffc107', '#fd7e14', '#198754', '#6c757d'], borderWidth: 0 }]
       },
       options: { responsive: true, cutout: '70%', plugins: { legend: { position: 'right' } } }
     });
 
-    // --- RENDER PRIORITY CHART (Bar) ---
+    // --- RENDER 2: Priority Chart ---
     const ctx2 = document.getElementById('priorityChart').getContext('2d');
     if(priorityChartInstance) priorityChartInstance.destroy();
     priorityChartInstance = new Chart(ctx2, {
       type: 'bar',
       data: {
         labels: Object.keys(prioCounts),
-        datasets: [{
-          label: 'Tickets',
-          data: Object.values(prioCounts),
-          backgroundColor: ['#dc3545', '#ffc107', '#0d6efd'],
-          borderRadius: 5
-        }]
+        datasets: [{ label: 'Tickets', data: Object.values(prioCounts), backgroundColor: ['#dc3545', '#ffc107', '#0d6efd'], borderRadius: 5 }]
       },
-      options: { 
-        responsive: true, 
-        plugins: { legend: { display: false } },
-        scales: { y: { beginAtZero: true, grid: { display: false } } }
-      }
+      options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
     });
 
-    // --- RENDER SUBJECT CHART (Horizontal Bar) ---
+    // --- RENDER 3: Subject Chart ---
     const ctx3 = document.getElementById('subjectChart').getContext('2d');
     if(subjectChartInstance) subjectChartInstance.destroy();
     subjectChartInstance = new Chart(ctx3, {
       type: 'bar',
       data: {
         labels: Object.keys(subjCounts),
-        datasets: [{
-          label: 'Count',
-          data: Object.values(subjCounts),
-          backgroundColor: '#6610f2',
-          borderRadius: 5
+        datasets: [{ label: 'Count', data: Object.values(subjCounts), backgroundColor: '#6610f2', borderRadius: 5 }]
+      },
+      options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } } }
+    });
+
+    // --- RENDER 4: Resolution Time Chart (NEW) ---
+    const ctx4 = document.getElementById('resolutionChart').getContext('2d');
+    if(resolutionChartInstance) resolutionChartInstance.destroy();
+    resolutionChartInstance = new Chart(ctx4, {
+      type: 'bar',
+      data: {
+        labels: Object.keys(timeBuckets),
+        datasets: [{ 
+          label: 'Tickets Resolved', 
+          data: Object.values(timeBuckets), 
+          backgroundColor: '#20c997', // Teal color
+          borderRadius: 4
         }]
       },
       options: { 
-        indexAxis: 'y', 
         responsive: true, 
+        maintainAspectRatio: false,
         plugins: { legend: { display: false } },
-        scales: { x: { beginAtZero: true } }
+        scales: { 
+          y: { beginAtZero: true, title: {display: true, text: 'Number of Tickets'} },
+          x: { grid: { display: false } }
+        } 
       }
     });
   }
 
   function renderUrgentTable(data) {
-    // Filter: High Priority AND (New OR In Progress OR Pending)
     const urgent = data.filter(t => t.priority === 'High' && t.status !== 'Resolved' && t.status !== 'Closed');
     const tbody = document.getElementById('urgentTableBody');
     tbody.innerHTML = '';
-
-    if (urgent.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" class="text-center text-success py-3"><i class="fas fa-check-circle me-2"></i>No urgent issues pending.</td></tr>';
-      return;
-    }
-
+    if (urgent.length === 0) { tbody.innerHTML = '<tr><td colspan="5" class="text-center text-success py-3"><i class="fas fa-check-circle me-2"></i>No urgent issues pending.</td></tr>'; return; }
     urgent.forEach(t => {
-      tbody.innerHTML += `
-        <tr>
-          <td class="fw-bold text-danger">#${t.id}</td>
-          <td>${t.subject}</td>
-          <td>${t.user}</td>
-          <td><span class="badge bg-danger">${t.status}</span></td>
-          <td class="text-muted small">${t.date}</td>
-        </tr>
-      `;
+      tbody.innerHTML += `<tr><td class="fw-bold text-danger">#${t.id}</td><td>${t.subject}</td><td>${t.user}</td><td><span class="badge bg-danger">${t.status}</span></td><td class="text-muted small">${t.date}</td></tr>`;
     });
   }
 
