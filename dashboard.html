@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analytics Dashboard - IT Ticket Hub</title>
+  
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    :root { 
+      --sidebar-width: 260px; 
+      --sidebar-bg: #1e293b; 
+      --bg-color: #f8f9fa; 
+    }
+    
+    body { background-color: var(--bg-color); font-family: 'Segoe UI', sans-serif; overflow-x: hidden; }
+
+    /* Sidebar Structure (Same as Admin) */
+    #wrapper { display: flex; width: 100%; min-height: 100vh; }
+    #sidebar-wrapper {
+      min-height: 100vh; width: var(--sidebar-width); background-color: var(--sidebar-bg); color: #fff;
+      position: fixed; left: 0; top: 0; z-index: 1000;
+    }
+    #page-content-wrapper { width: 100%; margin-left: var(--sidebar-width); padding: 20px; }
+
+    .sidebar-heading { padding: 1.5rem; font-size: 1.25rem; font-weight: bold; color: #fff; background: rgba(0,0,0,0.1); }
+    .list-group-item { border: none; background: transparent; color: #94a3b8; padding: 14px 25px; cursor: pointer; transition: 0.2s; }
+    .list-group-item:hover { color: #fff; background: rgba(255,255,255,0.05); }
+    .list-group-item.active { background-color: #dc3545; color: #fff; font-weight: 600; } /* Red for Admin */
+
+    /* Dashboard Cards */
+    .kpi-card { border: none; border-radius: 12px; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.05); transition: transform 0.2s; }
+    .kpi-card:hover { transform: translateY(-3px); }
+    .icon-box { width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+
+    /* Chart Containers */
+    .chart-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); height: 100%; border: none; }
+    
+    /* Tables */
+    .table-custom thead th { background: #f1f5f9; color: #64748b; font-size: 0.8rem; text-transform: uppercase; border: none; }
+    .table-custom td { vertical-align: middle; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+
+<div id="wrapper">
+
+  <div id="sidebar-wrapper">
+    <div class="sidebar-heading"><i class="fas fa-chart-line me-2"></i> IT Admin Hub</div>
+    <div class="list-group list-group-flush mt-3">
+      <a href="dashboard.html" class="list-group-item active">
+        <i class="fas fa-th-large me-3"></i> Dashboard
+      </a>
+      <a href="admin.html" class="list-group-item">
+        <i class="fas fa-ticket-alt me-3"></i> Ticket Management
+      </a>
+      <a href="notification.html" class="list-group-item">
+        <i class="fas fa-bell me-3"></i> Notifications
+      </a>
+      <a onclick="logout()" class="list-group-item text-danger mt-5">
+        <i class="fas fa-sign-out-alt me-3"></i> Logout
+      </a>
+    </div>
+  </div>
+
+  <div id="page-content-wrapper">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h3 class="fw-bold text-dark m-0">Analytics Overview</h3>
+        <small class="text-muted">Real-time insights from Google Sheets</small>
+      </div>
+      <button class="btn btn-outline-primary btn-sm" onclick="fetchData()">
+        <i class="fas fa-sync-alt me-2"></i> Refresh Data
+      </button>
+    </div>
+
+    <div class="row g-3 mb-4">
+      <div class="col-md-3">
+        <div class="kpi-card p-3 d-flex align-items-center">
+          <div class="icon-box bg-primary bg-opacity-10 text-primary me-3"><i class="fas fa-clipboard-list"></i></div>
+          <div><small class="text-muted fw-bold">TOTAL TICKETS</small><h3 class="fw-bold mb-0" id="kpiTotal">0</h3></div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="kpi-card p-3 d-flex align-items-center">
+          <div class="icon-box bg-warning bg-opacity-10 text-warning me-3"><i class="fas fa-exclamation-circle"></i></div>
+          <div><small class="text-muted fw-bold">PENDING</small><h3 class="fw-bold mb-0" id="kpiPending">0</h3></div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="kpi-card p-3 d-flex align-items-center">
+          <div class="icon-box bg-success bg-opacity-10 text-success me-3"><i class="fas fa-check-double"></i></div>
+          <div><small class="text-muted fw-bold">RESOLUTION RATE</small><h3 class="fw-bold mb-0" id="kpiRate">0%</h3></div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="kpi-card p-3 d-flex align-items-center">
+          <div class="icon-box bg-danger bg-opacity-10 text-danger me-3"><i class="fas fa-heart"></i></div>
+          <div><small class="text-muted fw-bold">AVG RATING</small><h3 class="fw-bold mb-0" id="kpiCsat">0.0</h3></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+      <div class="col-md-4">
+        <div class="chart-card">
+          <h6 class="fw-bold text-dark mb-3">Ticket Status</h6>
+          <canvas id="statusChart"></canvas>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="chart-card">
+          <h6 class="fw-bold text-dark mb-3">Priority Breakdown</h6>
+          <canvas id="priorityChart"></canvas>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="chart-card">
+          <h6 class="fw-bold text-dark mb-3">Issues by Category</h6>
+          <canvas id="subjectChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-3">
+      <div class="col-12">
+        <div class="chart-card h-auto">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="fw-bold text-danger"><i class="fas fa-fire me-2"></i>Urgent Attention Required (High Priority & Unresolved)</h6>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-custom table-hover mb-0">
+              <thead><tr><th>ID</th><th>Subject</th><th>User</th><th>Status</th><th>Date</th></tr></thead>
+              <tbody id="urgentTableBody">
+                <tr><td colspan="5" class="text-center text-muted py-3">No urgent tickets found. Good job!</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+  // *** API URL ***
+  const API_URL = "https://script.google.com/macros/s/AKfycbxnr626khgFH_xJgcGnw8NgIyPRhBJeaqBIRmxTj2FRqd8swt5hbSeanh70EaD7icRp/exec";
+
+  const userId = sessionStorage.getItem('userId');
+  const role = sessionStorage.getItem('role');
+  
+  // Security Check
+  if(role !== 'Admin') window.location.href = 'index.html';
+
+  let statusChartInstance, priorityChartInstance, subjectChartInstance;
+
+  window.onload = fetchData;
+
+  function fetchData() {
+    fetch(`${API_URL}?action=getAdminData&userId=${userId}`)
+      .then(res => res.json())
+      .then(data => {
+        if(data && data.length > 0) {
+          calculateKPIs(data);
+          renderCharts(data);
+          renderUrgentTable(data);
+        }
+      })
+      .catch(err => console.error("Error fetching data:", err));
+  }
+
+  function calculateKPIs(data) {
+    const total = data.length;
+    // Pending = Not Resolved AND Not Closed
+    const pending = data.filter(t => t.status !== 'Resolved' && t.status !== 'Closed').length;
+    const resolved = data.filter(t => t.status === 'Resolved' || t.status === 'Closed').length;
+    
+    // Calculate CSAT (Average Rating)
+    let totalRating = 0;
+    let ratedTickets = 0;
+    data.forEach(t => {
+      if(t.rating && t.rating > 0) {
+        totalRating += parseInt(t.rating);
+        ratedTickets++;
+      }
+    });
+    const avgRating = ratedTickets > 0 ? (totalRating / ratedTickets).toFixed(1) : "N/A";
+
+    // Update DOM
+    document.getElementById('kpiTotal').innerText = total;
+    document.getElementById('kpiPending').innerText = pending;
+    document.getElementById('kpiRate').innerText = Math.round((resolved / total) * 100) + "%";
+    document.getElementById('kpiCsat').innerText = avgRating;
+  }
+
+  function renderCharts(data) {
+    // 1. Prepare Data for Status Chart
+    const statusCounts = { 'New': 0, 'In Progress': 0, 'Pending': 0, 'Resolved': 0, 'Closed': 0 };
+    data.forEach(t => { if(statusCounts[t.status] !== undefined) statusCounts[t.status]++; });
+
+    // 2. Prepare Data for Priority Chart
+    const prioCounts = { 'High': 0, 'Medium': 0, 'Low': 0 };
+    data.forEach(t => { if(prioCounts[t.priority] !== undefined) prioCounts[t.priority]++; });
+
+    // 3. Prepare Data for Subject Chart
+    const subjCounts = {};
+    data.forEach(t => {
+      const s = t.subject || "Other";
+      subjCounts[s] = (subjCounts[s] || 0) + 1;
+    });
+
+    // --- RENDER STATUS CHART (Doughnut) ---
+    const ctx1 = document.getElementById('statusChart').getContext('2d');
+    if(statusChartInstance) statusChartInstance.destroy();
+    statusChartInstance = new Chart(ctx1, {
+      type: 'doughnut',
+      data: {
+        labels: Object.keys(statusCounts),
+        datasets: [{
+          data: Object.values(statusCounts),
+          backgroundColor: ['#0dcaf0', '#ffc107', '#fd7e14', '#198754', '#6c757d'],
+          borderWidth: 0
+        }]
+      },
+      options: { responsive: true, cutout: '70%', plugins: { legend: { position: 'right' } } }
+    });
+
+    // --- RENDER PRIORITY CHART (Bar) ---
+    const ctx2 = document.getElementById('priorityChart').getContext('2d');
+    if(priorityChartInstance) priorityChartInstance.destroy();
+    priorityChartInstance = new Chart(ctx2, {
+      type: 'bar',
+      data: {
+        labels: Object.keys(prioCounts),
+        datasets: [{
+          label: 'Tickets',
+          data: Object.values(prioCounts),
+          backgroundColor: ['#dc3545', '#ffc107', '#0d6efd'],
+          borderRadius: 5
+        }]
+      },
+      options: { 
+        responsive: true, 
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, grid: { display: false } } }
+      }
+    });
+
+    // --- RENDER SUBJECT CHART (Horizontal Bar) ---
+    const ctx3 = document.getElementById('subjectChart').getContext('2d');
+    if(subjectChartInstance) subjectChartInstance.destroy();
+    subjectChartInstance = new Chart(ctx3, {
+      type: 'bar',
+      data: {
+        labels: Object.keys(subjCounts),
+        datasets: [{
+          label: 'Count',
+          data: Object.values(subjCounts),
+          backgroundColor: '#6610f2',
+          borderRadius: 5
+        }]
+      },
+      options: { 
+        indexAxis: 'y', 
+        responsive: true, 
+        plugins: { legend: { display: false } },
+        scales: { x: { beginAtZero: true } }
+      }
+    });
+  }
+
+  function renderUrgentTable(data) {
+    // Filter: High Priority AND (New OR In Progress OR Pending)
+    const urgent = data.filter(t => t.priority === 'High' && t.status !== 'Resolved' && t.status !== 'Closed');
+    const tbody = document.getElementById('urgentTableBody');
+    tbody.innerHTML = '';
+
+    if (urgent.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="text-center text-success py-3"><i class="fas fa-check-circle me-2"></i>No urgent issues pending.</td></tr>';
+      return;
+    }
+
+    urgent.forEach(t => {
+      tbody.innerHTML += `
+        <tr>
+          <td class="fw-bold text-danger">#${t.id}</td>
+          <td>${t.subject}</td>
+          <td>${t.user}</td>
+          <td><span class="badge bg-danger">${t.status}</span></td>
+          <td class="text-muted small">${t.date}</td>
+        </tr>
+      `;
+    });
+  }
+
+  function logout() { sessionStorage.clear(); window.location.href = 'index.html'; }
+</script>
+
+</body>
+</html>
