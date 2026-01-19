@@ -246,15 +246,44 @@
         <h5 class="modal-title">Create New Ticket</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
+const TICKET_SUBJECT_OPTIONS = [
+  "Password Reset / Unlock Account", 
+  "Cannot Login (Software/System)",  
+  "Software Installation/Update Request", 
+  "Hardware Issue (Computer/Laptop/Monitor)", 
+  "Printer Not Working / Offline",     
+  "Network Connectivity Problem (No Internet/Slow)", 
+  "Email Problem (Sending/Receiving/Access)", 
+  "File Access / Permission Request",      
+  "Virus / Malware Concern",             
+  "Application Error / Crashing",
+  "Zoom not Working", 
+  "Issue Related Sophos",
+  "Issue Related Tally",     
+  "Other" 
+];
+
       <div class="modal-body">
         <form id="createForm">
           <div class="mb-3">
             <label class="fw-bold small text-muted">SUBJECT</label>
             <select id="subject" class="form-select">
-              <option>Hardware Issue</option>
+              <option>Hardware Issue (Computer/Laptop/Monitor)</option>
               <option>Software Issue</option>
               <option>Network/Internet</option>
               <option>Access/Login</option>
+              <option>Password Reset / Unlock Account</option>
+              <option>Cannot Login (Software/System)</option>
+              <option>Software Installation/Update Request</option>
+              <option>Printer Not Working / Offline</option>
+              <option>Network Connectivity Problem (No Internet/Slow)</option>
+              <option>Email Problem (Sending/Receiving/Access)</option>
+              <option>File Access / Permission Request</option>
+              <option>Virus / Malware Concern</option>
+              <option>Application Error / Crashing</option>
+              <option>Zoom not Working</option>
+              <option>Issue Related Sophos</option>
+              <option>Issue Related Tally</option>
               <option>Other</option>
             </select>
           </div>
