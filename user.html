@@ -11,30 +11,14 @@
   <style>
     body { overflow-x: hidden; background-color: #f4f6f9; }
 
-    /* Sidebar Styles */
+    /* Sidebar & Layout Styles */
     #wrapper { display: flex; width: 100%; height: 100vh; }
-    #sidebar-wrapper {
-      min-height: 100vh; width: 250px; background-color: #212529; color: white;
-      transition: margin 0.25s ease-out; flex-shrink: 0;
-    }
-    .sidebar-heading { padding: 1.5rem 1.25rem; font-size: 1.2rem; font-weight: bold; border-bottom: 1px solid #444; background-color: #1c1f23; }
-    
-    .list-group-item { border: none; padding: 15px 20px; background-color: transparent; color: #cfd2d6; }
-    .list-group-item:hover { background-color: #343a40; color: #fff; cursor: pointer; }
-    
-    /* Active State for Sidebar */
-    .list-group-item.active { background-color: #0d6efd; color: white; font-weight: bold; border-left: 4px solid #fff; }
-    .list-group-item i { width: 25px; }
-
-    /* Page Content */
+    #sidebar-wrapper { min-height: 100vh; width: 250px; background-color: #212529; color: white; transition: margin 0.25s ease-out; flex-shrink: 0; }
+    .sidebar-heading { padding: 1.5rem; font-size: 1.2rem; font-weight: bold; background-color: #1c1f23; border-bottom: 1px solid #444; }
+    .list-group-item { border: none; padding: 15px 20px; background: transparent; color: #cfd2d6; cursor: pointer; }
+    .list-group-item:hover, .list-group-item.active { background-color: #0d6efd; color: white; }
     #page-content-wrapper { flex: 1; overflow-y: auto; width: 100%; }
-    .top-navbar { background-color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
-
-    /* Badges */
-    .badge-status-new { background-color: #3b82f6; } 
-    .badge-status-resolved { background-color: #10b981; } 
-    .badge-status-pending { background-color: #f59e0b; }
-
+    
     /* Mobile Toggle */
     #wrapper.toggled #sidebar-wrapper { margin-left: -250px; }
     @media (max-width: 768px) {
@@ -43,6 +27,14 @@
       #overlay { display: none; position: fixed; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 900; }
       #wrapper.toggled #overlay { display: block; }
     }
+
+    /* Clickable Row Styles */
+    .clickable-row { cursor: pointer; transition: background 0.2s; }
+    .clickable-row:hover { background-color: #e9ecef !important; }
+
+    /* Modal Styles */
+    .timeline-box { background: #f8f9fa; border-radius: 8px; padding: 15px; border-left: 4px solid #0d6efd; margin-bottom: 15px; }
+    .log-box { background: #212529; color: #00ff00; font-family: monospace; padding: 15px; border-radius: 5px; max-height: 200px; overflow-y: auto; font-size: 0.85rem; }
   </style>
 </head>
 <body>
@@ -53,42 +45,26 @@
     <div id="sidebar-wrapper">
       <div class="sidebar-heading text-warning"><i class="fas fa-ticket-alt"></i> IT Ticket Hub</div>
       <div class="list-group list-group-flush mt-3">
-        
-        <a id="menu-all" class="list-group-item list-group-item-action active" onclick="switchView('All')">
-          <i class="fas fa-list"></i> My Tickets (All)
-        </a>
-
-        <a id="menu-open" class="list-group-item list-group-item-action" onclick="switchView('Open')">
-          <i class="fas fa-folder-open"></i> Open Tickets
-        </a>
-
-        <a class="list-group-item list-group-item-action" data-bs-toggle="modal" data-bs-target="#newTicketModal">
-          <i class="fas fa-plus-circle"></i> New Ticket
-        </a>
-
-        <a class="list-group-item list-group-item-action text-danger mt-4" onclick="logout()">
-          <i class="fas fa-sign-out-alt"></i> Logout
-        </a>
+        <a id="menu-all" class="list-group-item active" onclick="switchView('All')"><i class="fas fa-list me-2"></i> My Tickets (All)</a>
+        <a id="menu-open" class="list-group-item" onclick="switchView('Open')"><i class="fas fa-folder-open me-2"></i> Open Tickets</a>
+        <a class="list-group-item" data-bs-toggle="modal" data-bs-target="#newTicketModal"><i class="fas fa-plus-circle me-2"></i> New Ticket</a>
+        <a class="list-group-item text-danger mt-4" onclick="logout()"><i class="fas fa-sign-out-alt me-2"></i> Logout</a>
       </div>
-      
       <div class="mt-auto p-3 text-center text-secondary border-top border-secondary" style="font-size: 0.8rem;">
         Logged in as:<br><span id="displayUserId" class="text-white">User</span>
       </div>
     </div>
 
     <div id="page-content-wrapper">
-      <nav class="top-navbar">
-        <button class="btn btn-outline-dark" id="menu-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
-        <div class="fw-bold text-secondary">Dashboard</div>
+      <nav class="navbar navbar-light bg-white shadow-sm px-4 py-3 mb-4">
+        <button class="btn btn-outline-dark me-3" id="menu-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+        <span class="fw-bold text-secondary fs-5">Dashboard</span>
       </nav>
 
-      <div class="container-fluid p-4">
-        
+      <div class="container-fluid px-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
           <h3 class="text-dark" id="page-title">My Tickets</h3>
-          <button class="btn btn-success shadow-sm" data-bs-toggle="modal" data-bs-target="#newTicketModal">
-            <i class="fas fa-paper-plane me-2"></i>Raise Ticket
-          </button>
+          <button class="btn btn-success shadow-sm" data-bs-toggle="modal" data-bs-target="#newTicketModal"><i class="fas fa-paper-plane me-2"></i>Raise Ticket</button>
         </div>
 
         <div class="card shadow-sm border-0 rounded-3">
@@ -101,7 +77,7 @@
                     <th>Subject</th>
                     <th>Priority</th>
                     <th>Status</th>
-                    <th>Date</th>
+                    <th>Date Created</th>
                   </tr>
                 </thead>
                 <tbody id="ticketBody">
@@ -111,7 +87,53 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
 
+  <div class="modal fade" id="ticketDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-dark text-white">
+          <h5 class="modal-title" id="modalTicketTitle">Ticket Details</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          
+          <div class="timeline-box">
+            <div class="row text-center">
+              <div class="col-md-4 mb-2">
+                <small class="text-muted">Created On</small><br>
+                <strong id="detailCreated"></strong>
+              </div>
+              <div class="col-md-4 mb-2">
+                <small class="text-muted">Closed On</small><br>
+                <strong id="detailClosed" class="text-primary"></strong>
+              </div>
+              <div class="col-md-4 mb-2">
+                <small class="text-muted">Resolved By</small><br>
+                <strong id="detailClosedBy"></strong>
+              </div>
+            </div>
+            <hr>
+            <div class="text-center">
+              <span class="badge bg-warning text-dark fs-6">Time Taken: <span id="detailDuration"></span></span>
+            </div>
+          </div>
+
+          <h6 class="fw-bold">Description:</h6>
+          <div class="p-3 bg-light rounded mb-3 border">
+            <p id="detailDesc" class="mb-0 text-secondary">No description.</p>
+          </div>
+
+          <h6 class="fw-bold">Updates & Logs:</h6>
+          <div class="log-box" id="detailLogs">
+            </div>
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
       </div>
     </div>
   </div>
@@ -130,8 +152,7 @@
               <select id="subject" class="form-select">
                 <option value="Hardware Issue">Hardware Issue</option>
                 <option value="Software Issue">Software Issue</option>
-                <option value="Network/Internet">Internet/Network</option>
-                <option value="Email/Access">Email/Access</option>
+                <option value="Network/Internet">Network/Internet</option>
                 <option value="Other">Other</option>
               </select>
             </div>
@@ -164,21 +185,18 @@
     if(!userId) window.location.href = 'index.html';
     document.getElementById('displayUserId').innerText = userId;
 
-    let allTickets = []; // Store fetched tickets locally
+    let allTickets = [];
 
-    window.onload = function() {
-      fetchTickets();
-    };
+    window.onload = function() { fetchTickets(); };
 
     function toggleSidebar() { document.getElementById("wrapper").classList.toggle("toggled"); }
 
-    // 1. Fetch Data Once
     function fetchTickets() {
       fetch(`${API_URL}?action=getTickets&userId=${userId}&role=User`)
         .then(res => res.json())
         .then(data => {
           allTickets = data || [];
-          renderTickets('All'); // Default view
+          renderTickets('All');
         })
         .catch(err => {
           console.error(err);
@@ -186,9 +204,7 @@
         });
     }
 
-    // 2. Handle Filtering & Sidebar Active State
     function switchView(viewType) {
-      // Toggle Active Class
       document.getElementById('menu-all').classList.remove('active');
       document.getElementById('menu-open').classList.remove('active');
 
@@ -199,19 +215,15 @@
         document.getElementById('menu-open').classList.add('active');
         document.getElementById('page-title').innerText = "Open Tickets";
       }
-
       renderTickets(viewType);
     }
 
-    // 3. Render Table based on Filter
     function renderTickets(filter) {
       const tbody = document.getElementById('ticketBody');
       tbody.innerHTML = '';
       
-      // Filter Logic
       let filteredData = allTickets;
       if (filter === 'Open') {
-        // Exclude Resolved and Closed
         filteredData = allTickets.filter(t => t.status !== 'Resolved' && t.status !== 'Closed');
       }
 
@@ -222,13 +234,14 @@
 
       filteredData.forEach(t => {
         let badgeClass = 'bg-secondary';
-        if(t.status === 'New') badgeClass = 'badge-status-new';
-        if(t.status === 'Resolved' || t.status === 'Closed') badgeClass = 'badge-status-resolved';
-        if(t.status === 'Pending') badgeClass = 'badge-status-pending';
+        if(t.status === 'New') badgeClass = 'bg-primary';
+        if(t.status === 'Resolved' || t.status === 'Closed') badgeClass = 'bg-success';
+        if(t.status === 'Pending') badgeClass = 'bg-warning text-dark';
         let priorityColor = t.priority === 'High' ? 'text-danger fw-bold' : 'text-dark';
 
+        // Add onclick event to open modal
         let row = `
-          <tr>
+          <tr class="clickable-row" onclick="openTicketDetail('${t.id}')">
             <td class="ps-4 fw-bold text-primary"><small>${t.id}</small></td>
             <td>${t.subject}</td>
             <td class="${priorityColor}">${t.priority || 'Medium'}</td>
@@ -238,6 +251,29 @@
         `;
         tbody.innerHTML += row;
       });
+    }
+
+    // --- NEW: Open Modal Function ---
+    function openTicketDetail(ticketId) {
+      // Find the ticket object
+      const ticket = allTickets.find(t => t.id === ticketId);
+      if(!ticket) return;
+
+      // Populate Modal Fields
+      document.getElementById('modalTicketTitle').innerText = `${ticket.id} - ${ticket.status}`;
+      document.getElementById('detailCreated').innerText = ticket.fullCreated;
+      document.getElementById('detailClosed').innerText = ticket.fullClosed;
+      document.getElementById('detailClosedBy').innerText = ticket.closedBy;
+      document.getElementById('detailDuration').innerText = ticket.duration;
+      document.getElementById('detailDesc').innerText = ticket.desc || "No description provided.";
+      
+      // Logs formating
+      const logs = ticket.logs ? ticket.logs.replace(/\n/g, '<br>') : "No updates yet.";
+      document.getElementById('detailLogs').innerHTML = logs;
+
+      // Show Modal
+      const modal = new bootstrap.Modal(document.getElementById('ticketDetailModal'));
+      modal.show();
     }
 
     // Create Ticket Logic
@@ -262,7 +298,7 @@
           bootstrap.Modal.getInstance(document.getElementById('newTicketModal')).hide();
           document.getElementById('createForm').reset();
           alert("Ticket Created!");
-          fetchTickets(); // Reload data
+          fetchTickets();
         } else { alert("Error: " + data.message); }
       })
       .catch(() => alert("Server Error"))
