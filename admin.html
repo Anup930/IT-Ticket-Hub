@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Dashboard | IT Hub</title>
+  <title>Admin Dashboard | IT Ticket Hub</title>
   
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -73,6 +73,7 @@
       transition: all 0.2s ease;
       cursor: pointer;
       border-left: 3px solid transparent;
+      text-decoration: none;
     }
 
     .list-group-item:hover {
@@ -163,7 +164,8 @@
       border-bottom: 1px solid #f1f5f9;
     }
 
-    .clickable-row:hover td { background-color: #f8fafc; cursor: pointer; }
+    .clickable-row { transition: 0.1s; cursor: pointer; }
+    .clickable-row:hover { background-color: #f8fafc; }
 
     /* Badges */
     .badge-modern { padding: 6px 12px; border-radius: 30px; font-weight: 600; font-size: 0.75rem; }
@@ -354,6 +356,47 @@
   </div>
   </div>
 
+<div class="modal fade" id="urgentPopup" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg overflow-hidden" style="border-radius: 20px;">
+      
+      <div class="modal-header border-0 text-white p-4" style="background: linear-gradient(135deg, #ef4444, #b91c1c);">
+        <div class="d-flex align-items-center gap-3">
+          <div class="bg-white bg-opacity-25 rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+            <i class="fas fa-bell fa-shake fs-4 text-white"></i>
+          </div>
+          <div>
+            <h5 class="modal-title fw-bold mb-0">Attention Required!</h5>
+            <small class="text-white-50">Urgent items pending action</small>
+          </div>
+        </div>
+        <button type="button" class="btn-close btn-close-white align-self-start" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body p-0">
+        <div class="d-flex border-bottom bg-light">
+          <div class="flex-fill p-3 text-center border-end">
+            <div class="text-uppercase text-muted fw-bold" style="font-size: 0.7rem;">Total Open</div>
+            <div class="fs-4 fw-bold text-dark" id="popupTotalOpen">0</div>
+          </div>
+          <div class="flex-fill p-3 text-center">
+            <div class="text-uppercase text-danger fw-bold" style="font-size: 0.7rem;">High Priority</div>
+            <div class="fs-4 fw-bold text-danger" id="popupHighCount">0</div>
+          </div>
+        </div>
+        <div class="p-3">
+          <h6 class="fw-bold text-secondary small mb-3 text-uppercase ms-1">Urgent Action Items</h6>
+          <div class="list-group list-group-flush" id="urgentList">
+            </div>
+        </div>
+        <div class="p-3 bg-light text-center border-top">
+          <button class="btn btn-dark w-100 py-2 rounded-pill" data-bs-dismiss="modal">I'll handle it</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="modal fade" id="adminModal" tabindex="-1" data-bs-backdrop="static">
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content border-0 shadow-lg">
@@ -454,7 +497,11 @@
 
   let fullData = [], filteredData = [], currentPage = 1, rowsPerPage = 20, currentTab = 'All', currentTicketId = null;
 
-  window.onload = () => { initFetch(); fetchUsers(); };
+  window.onload = () => { 
+    initFetch(); 
+    fetchUsers();
+    initUrgentPopup(); // <-- Start 10s Timer
+  };
 
   function initFetch() {
     fetch(`${API_URL}?action=getAdminData&userId=${userId}`)
@@ -464,6 +511,54 @@
         updateStats(); 
         applyFilters(); 
       });
+  }
+
+  // *** URGENT POPUP LOGIC ***
+  function initUrgentPopup() {
+    setTimeout(() => {
+      // Filter: Status not Resolved/Closed AND Priority is High
+      const highPrioTickets = fullData.filter(t => 
+        t.priority === 'High' && 
+        t.status !== 'Resolved' && 
+        t.status !== 'Closed'
+      );
+
+      const totalOpen = fullData.filter(t => t.status !== 'Resolved' && t.status !== 'Closed').length;
+
+      // Only show if high priority tickets exist
+      if (highPrioTickets.length === 0) return; 
+
+      // Update Counts
+      document.getElementById('popupTotalOpen').innerText = totalOpen;
+      document.getElementById('popupHighCount').innerText = highPrioTickets.length;
+
+      // Generate List (Max 3)
+      const listContainer = document.getElementById('urgentList');
+      listContainer.innerHTML = '';
+
+      highPrioTickets.slice(0, 3).forEach(t => {
+        listContainer.innerHTML += `
+          <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center border rounded mb-2 shadow-sm" onclick="openAdminModal('${t.id}'); bootstrap.Modal.getInstance(document.getElementById('urgentPopup')).hide();">
+            <div>
+              <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-danger rounded-pill" style="font-size: 0.6rem;">HIGH</span>
+                <span class="fw-bold text-dark">#${t.id}</span>
+              </div>
+              <div class="small text-muted mt-1 text-truncate" style="max-width: 200px;">${t.subject}</div>
+              <div class="small text-primary fw-bold" style="font-size: 0.75rem;">${t.user}</div>
+            </div>
+            <i class="fas fa-chevron-right text-muted small"></i>
+          </a>
+        `;
+      });
+
+      if(highPrioTickets.length > 3) {
+        listContainer.innerHTML += `<div class="text-center small text-danger mt-2 fw-bold">+ ${highPrioTickets.length - 3} more critical tickets</div>`;
+      }
+
+      new bootstrap.Modal(document.getElementById('urgentPopup')).show();
+
+    }, 10000); // 10 Second Delay
   }
 
   function fetchUsers() {
@@ -601,7 +696,7 @@
     const st = document.getElementById('updateStatus').value;
     const btn = document.getElementById('sendBtn'); 
     
-    if(!msg && st === fullData.find(x=>x.id===currentTicketId).status) return; // Prevent empty updates
+    if(!msg && st === fullData.find(x=>x.id===currentTicketId).status) return;
 
     btn.disabled=true; btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>';
     
