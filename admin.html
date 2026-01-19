@@ -3,122 +3,316 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Panel - IT Ticket Hub</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <title>Admin Dashboard - IT Ticket Hub</title>
+  
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
   <style>
-    /* CSS for Admin Panel */
-    body { background-color: #f8f9fa; }
-    .sidebar { height: 100vh; width: 250px; position: fixed; background: #212529; color: white; padding-top: 20px; }
-    .sidebar a { display: block; padding: 15px 20px; color: #adb5bd; text-decoration: none; }
-    .sidebar a:hover, .sidebar a.active { background: #0d6efd; color: white; }
-    .content { margin-left: 250px; padding: 30px; }
-    .card-counter { padding: 20px; border-radius: 8px; color: white; margin-bottom: 20px; }
-    .bg-info-custom { background: #17a2b8; }
-    .loader { display: none; text-align: center; margin-top: 20px; }
+    :root {
+      --sidebar-width: 260px;
+      --sidebar-bg: #111827; /* Darker for Admin */
+      --primary-color: #dc3545; /* Red Theme for Admin */
+      --bg-color: #f3f4f6;
+    }
+
+    body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); overflow-x: hidden; }
+
+    /* --- SIDEBAR --- */
+    #wrapper { display: flex; width: 100%; min-height: 100vh; }
+    #sidebar-wrapper {
+      min-height: 100vh; width: var(--sidebar-width); background-color: var(--sidebar-bg); color: #fff;
+      position: fixed; left: 0; top: 0; z-index: 1000; transition: 0.3s; display: flex; flex-direction: column;
+    }
+    .sidebar-heading { padding: 1.5rem; font-weight: 700; font-size: 1.2rem; background: rgba(255,255,255,0.05); color: var(--primary-color); }
+    .list-group-item { border: none; padding: 15px 25px; background: transparent; color: #9ca3af; font-weight: 500; cursor: pointer; }
+    .list-group-item:hover { color: #fff; background: rgba(255,255,255,0.05); }
+    .list-group-item.active { background-color: var(--primary-color); color: #fff; font-weight: 600; border-radius: 0 25px 25px 0; }
+    
+    #page-content-wrapper { width: 100%; margin-left: var(--sidebar-width); padding: 20px; transition: 0.3s; }
+
+    /* Mobile Responsive */
+    @media (max-width: 992px) {
+      #sidebar-wrapper { margin-left: calc(var(--sidebar-width) * -1); }
+      #page-content-wrapper { margin-left: 0; }
+      #wrapper.toggled #sidebar-wrapper { margin-left: 0; box-shadow: 5px 0 15px rgba(0,0,0,0.3); }
+      #overlay { display: none; position: fixed; width: 100%; height: 100%; top:0; left:0; background: rgba(0,0,0,0.5); z-index: 900; }
+      #wrapper.toggled #overlay { display: block; }
+    }
+
+    /* --- CARDS & TABLE --- */
+    .card { border: none; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+    .table thead th { background-color: #1f2937; color: #fff; font-weight: 600; font-size: 0.8rem; text-transform: uppercase; border: none; }
+    .clickable-row { cursor: pointer; transition: 0.2s; }
+    .clickable-row:hover { background-color: #e5e7eb !important; }
+
+    /* Badges */
+    .badge-new { background-color: #3b82f6; }
+    .badge-progress { background-color: #f59e0b; text-color: black; }
+    .badge-resolved { background-color: #10b981; }
+    .badge-closed { background-color: #6b7280; }
+
+    /* --- CHAT UI --- */
+    .chat-container {
+      background-color: #e5ddd5;
+      background-image: url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png");
+      border-radius: 12px; height: 350px; overflow-y: auto; padding: 15px;
+      display: flex; flex-direction: column; gap: 8px; border: 1px solid #d1d5db;
+    }
+    .chat-bubble { max-width: 80%; padding: 8px 12px; border-radius: 10px; font-size: 0.9rem; position: relative; display: flex; flex-direction: column; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+    
+    /* Admin (Me) = Right (Green) */
+    .chat-right { align-self: flex-end; background: #dcf8c6; border-top-right-radius: 0; }
+    /* User (Other) = Left (White) */
+    .chat-left { align-self: flex-start; background: #fff; border-top-left-radius: 0; }
+    
+    .chat-time { font-size: 0.65rem; color: #666; align-self: flex-end; margin-top: 2px; }
+    .chat-user { font-size: 0.7rem; font-weight: bold; color: #d63384; margin-bottom: 2px; }
+
+    /* Admin Action Bar */
+    .admin-actions { background: #fff; padding: 10px; border-top: 1px solid #e5e7eb; border-radius: 0 0 12px 12px; }
   </style>
 </head>
 <body>
 
-  <div class="sidebar">
-    <h4 class="text-center">Admin Panel</h4>
-    <hr>
-    <a href="#" class="active">Dashboard</a>
-    <a href="#" onclick="logout()">Logout</a>
+<div id="wrapper">
+  <div id="overlay" onclick="toggleSidebar()"></div>
+
+  <div id="sidebar-wrapper">
+    <div class="sidebar-heading"><i class="fas fa-user-shield me-2"></i> Admin Panel</div>
+    <div class="list-group list-group-flush mt-3">
+      <a class="list-group-item active"><i class="fas fa-th-large me-2"></i> All Tickets</a>
+      <a class="list-group-item text-danger mt-auto mb-4" onclick="logout()"><i class="fas fa-sign-out-alt me-2"></i> Logout</a>
+    </div>
+    <div class="p-3 text-center small text-secondary border-top border-secondary">
+      Admin: <span id="displayUserId" class="text-white">...</span>
+    </div>
   </div>
 
-  <div class="content">
-    <h2>All Active Tickets</h2>
-    <button class="btn btn-sm btn-outline-dark mb-3" onclick="loadTickets()">Refresh Data</button>
+  <div id="page-content-wrapper">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div class="d-flex align-items-center">
+        <button class="btn btn-dark d-lg-none me-3" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+        <h3 class="fw-bold text-dark m-0">Ticket Management</h3>
+      </div>
+      <button class="btn btn-outline-dark btn-sm" onclick="fetchTickets()"><i class="fas fa-sync-alt me-1"></i> Refresh</button>
+    </div>
 
-    <div class="row mb-4">
-      <div class="col-md-4">
-        <div class="card-counter bg-info-custom">
-          <h5>Total Tickets</h5>
-          <h2 id="totalCount">0</h2>
+    <div class="row g-3 mb-4">
+      <div class="col-6 col-md-3">
+        <div class="card p-3 border-start border-4 border-primary">
+          <small class="text-muted fw-bold">TOTAL</small>
+          <h3 class="fw-bold mb-0" id="statTotal">0</h3>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card p-3 border-start border-4 border-warning">
+          <small class="text-muted fw-bold">OPEN</small>
+          <h3 class="fw-bold mb-0" id="statOpen">0</h3>
         </div>
       </div>
     </div>
 
-    <div class="card shadow-sm">
-      <div class="card-body">
-        <div class="table-responsive">
-          <table class="table table-striped" id="ticketTable">
-            <thead class="table-dark">
-              <tr>
-                <th>ID</th>
-                <th>Subject</th>
-                <th>Priority</th>
-                <th>Status</th>
-                <th>Date</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              </tbody>
-          </table>
-          <div id="loading" class="loader"><div class="spinner-border"></div> Loading...</div>
+    <div class="card shadow-sm border-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th class="ps-3">ID</th>
+              <th>User</th>
+              <th>Subject</th>
+              <th>Priority</th>
+              <th>Status</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody id="ticketBody">
+            <tr><td colspan="6" class="text-center py-5 text-muted"><i class="fas fa-spinner fa-spin"></i> Loading data...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="modal fade" id="adminModal" tabindex="-1" data-bs-backdrop="static">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-dark text-white">
+        <h5 class="modal-title">Manage Ticket #<span id="modalId"></span></h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body bg-light">
+        
+        <div class="card border-0 shadow-sm mb-3">
+          <div class="card-body p-2">
+            <div class="row text-center small">
+              <div class="col-4 border-end"><strong>User:</strong> <span id="modalUser" class="text-primary"></span></div>
+              <div class="col-4 border-end"><strong>Date:</strong> <span id="modalDate"></span></div>
+              <div class="col-4"><strong>Priority:</strong> <span id="modalPriority" class="badge bg-secondary"></span></div>
+            </div>
+            <hr class="my-2">
+            <p class="px-2 mb-1 text-dark" id="modalDesc"></p>
+          </div>
         </div>
+
+        <h6 class="fw-bold text-secondary px-1">Discussion</h6>
+        <div id="chatWindow" class="chat-container mb-0" style="border-bottom-left-radius: 0; border-bottom-right-radius: 0;"></div>
+
+        <div class="admin-actions">
+          <div class="row g-2">
+            <div class="col-md-4">
+              <select id="updateStatus" class="form-select border-primary fw-bold text-primary">
+                <option value="New">New</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Pending">Pending User</option>
+                <option value="Resolved">Resolved</option>
+                <option value="Closed">Closed</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <input type="text" id="adminMsg" class="form-control" placeholder="Reply to user..." onkeypress="handleEnter(event)">
+            </div>
+            <div class="col-md-2">
+              <button class="btn btn-primary w-100" id="sendBtn" onclick="sendUpdate()">
+                <i class="fas fa-paper-plane"></i> Send
+              </button>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
+</div>
 
-  <script>
-    // *** JAVASCRIPT FOR ADMIN ***
-    const API_URL = "https://script.google.com/macros/s/AKfycbwph1zPPyg0WfW2V_Jq-umvIDC3on6NlgSGpmCbz1V5fBfL3HAPClp9PL2cc-HP1xii/exec";
-    const userId = sessionStorage.getItem('userId');
-    const role = sessionStorage.getItem('role');
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // *** API URL ***
+  const API_URL = "https://script.google.com/macros/s/AKfycbwph1zPPyg0WfW2V_Jq-umvIDC3on6NlgSGpmCbz1V5fBfL3HAPClp9PL2cc-HP1xii/exec"; // REPLACE THIS!
 
-    // Security Check
-    if(!userId || role !== 'Admin') {
-      window.location.href = 'index.html';
-    }
+  const userId = sessionStorage.getItem('userId');
+  const role = sessionStorage.getItem('role');
 
-    // On Load
-    window.onload = function() {
-      loadTickets();
-    };
+  if(role !== 'Admin') window.location.href = 'index.html';
+  document.getElementById('displayUserId').innerText = userId;
 
-    function loadTickets() {
-      document.getElementById('loading').style.display = 'block';
-      const tbody = document.querySelector('#ticketTable tbody');
-      tbody.innerHTML = ''; // Clear table
+  let allTickets = [], currentId = null;
 
-      // Fetch GET Request
-      fetch(`${API_URL}?action=getTickets&userId=${userId}&role=${role}`)
+  window.onload = () => fetchTickets();
+  function toggleSidebar() { document.getElementById("wrapper").classList.toggle("toggled"); }
+
+  function fetchTickets() {
+    fetch(`${API_URL}?action=getTickets&userId=${userId}&role=Admin`)
       .then(res => res.json())
       .then(data => {
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('totalCount').innerText = data.length;
-
-        if(data.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="6" class="text-center">No tickets found.</td></tr>';
-          return;
-        }
-
-        data.forEach(ticket => {
-          let row = `
-            <tr>
-              <td>${ticket.id}</td>
-              <td>${ticket.subject}</td>
-              <td>${ticket.priority}</td>
-              <td><span class="badge bg-secondary">${ticket.status}</span></td>
-              <td>${ticket.date}</td>
-              <td><button class="btn btn-sm btn-primary">Edit</button></td>
-            </tr>
-          `;
-          tbody.innerHTML += row;
-        });
-      })
-      .catch(err => {
-        console.error(err);
-        document.getElementById('loading').innerHTML = 'Error loading data.';
+        allTickets = data || [];
+        document.getElementById('statTotal').innerText = allTickets.length;
+        document.getElementById('statOpen').innerText = allTickets.filter(t => t.status !== 'Resolved' && t.status !== 'Closed').length;
+        renderTable();
       });
-    }
+  }
 
-    function logout() {
-      sessionStorage.clear();
-      window.location.href = 'index.html';
-    }
-  </script>
+  function renderTable() {
+    const tbody = document.getElementById('ticketBody'); tbody.innerHTML = '';
+    if(!allTickets.length) { tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5">No tickets found.</td></tr>'; return; }
+
+    allTickets.forEach(t => {
+      let cls = 'badge-closed';
+      if(t.status==='New') cls='badge-new';
+      else if(t.status==='In Progress') cls='badge-progress';
+      else if(t.status==='Resolved') cls='badge-resolved';
+
+      tbody.innerHTML += `
+        <tr class="clickable-row" onclick="openAdminModal('${t.id}')">
+          <td class="ps-3 fw-bold text-dark small">${t.id}</td>
+          <td class="text-primary fw-bold small">${t.user || 'Unknown'}</td>
+          <td>${t.subject}</td>
+          <td><span class="badge ${t.priority==='High'?'bg-danger':'bg-secondary'}">${t.priority}</span></td>
+          <td><span class="badge ${cls} rounded-pill">${t.status}</span></td>
+          <td class="text-muted small">${t.date}</td>
+        </tr>`;
+    });
+  }
+
+  function openAdminModal(id) {
+    currentId = id;
+    const t = allTickets.find(x => x.id === id);
+    if(!t) return;
+
+    document.getElementById('modalId').innerText = t.id;
+    document.getElementById('modalUser').innerText = t.user;
+    document.getElementById('modalDate').innerText = t.date;
+    document.getElementById('modalPriority').innerText = t.priority;
+    document.getElementById('modalDesc').innerText = t.desc;
+    document.getElementById('updateStatus').value = t.status; // Set current status
+
+    loadChat(t.logs, t.user); // Pass ticket creator user ID
+    new bootstrap.Modal(document.getElementById('adminModal')).show();
+  }
+
+  function loadChat(logs, ticketUser) {
+    const win = document.getElementById('chatWindow'); win.innerHTML = '';
+    if(!logs) { win.innerHTML = '<div class="text-center mt-5 text-muted small">No logs.</div>'; return; }
+
+    const pattern = /^\[(.*?)\] \[(.*?)\]: (.*)$/;
+    logs.split('\n').forEach(line => {
+      if(!line.trim()) return;
+      const m = line.match(pattern);
+      let time="", user="", msg=line;
+      if(m) { time=m[1]; user=m[2]; msg=m[3]; }
+
+      // Logic: Admin (Me) is Right, User (They) is Left
+      const isMe = user.toLowerCase() === userId.toLowerCase();
+      
+      win.innerHTML += `
+        <div class="chat-bubble ${isMe?'chat-right':'chat-left'}">
+          <div class="chat-user">${user}</div>
+          <span>${msg}</span><div class="chat-time">${time}</div>
+        </div>`;
+    });
+    setTimeout(() => win.scrollTop = win.scrollHeight, 100);
+  }
+
+  function sendUpdate() {
+    const msg = document.getElementById('adminMsg').value;
+    const status = document.getElementById('updateStatus').value;
+    const btn = document.getElementById('sendBtn');
+
+    // Build message. If text is empty, just say "Status Updated"
+    const finalMsg = msg.trim() === "" ? `Status changed to ${status}` : msg;
+
+    btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+    fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'addUpdate',
+        ticketId: currentId,
+        userId: userId, // Admin ID
+        message: finalMsg + ` (Status: ${status})`, // Append status to msg for clarity
+        status: status // Send status to backend to update column
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if(data.success) {
+        document.getElementById('adminMsg').value = '';
+        fetchTickets().then(() => {
+           // Refresh Chat
+           const t = allTickets.find(x => x.id === currentId);
+           if(t) loadChat(t.logs, t.user);
+        });
+      } else alert("Error updating");
+    })
+    .finally(() => { btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> Send'; });
+  }
+
+  function handleEnter(e) { if(e.key === 'Enter') sendUpdate(); }
+  function logout() { sessionStorage.clear(); window.location.href = 'index.html'; }
+</script>
 </body>
 </html>
