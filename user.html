@@ -199,6 +199,7 @@
       });
     }
 
+    // --- UPDATED: OPEN DETAIL (With Logic for Review View) ---
     function openDetail(id) {
       currentTicketId = id;
       const t = allTickets.find(x => x.id === id);
@@ -207,37 +208,106 @@
       document.getElementById('modalTicketTitle').innerText = t.id;
       document.getElementById('detailCreated').innerText = t.fullCreated;
       document.getElementById('detailStatus').innerText = t.status;
-      document.getElementById('detailDuration').innerText = t.duration || "Active";
+      
+      // Duration Badge Logic
+      const durBadge = document.getElementById('detailDuration');
+      durBadge.innerText = t.duration || "Active";
+      durBadge.className = t.status === 'Resolved' || t.status === 'Closed' ? 'badge bg-success' : 'badge bg-warning text-dark';
+
       document.getElementById('detailDesc').innerText = t.desc;
 
+      // LOGIC: Show Chat vs Review Form vs Review Done
       const isClosed = (t.status === 'Resolved' || t.status === 'Closed');
-      const hasRated = (t.rating && t.rating !== "");
+      // Check if rating exists (Handle number or string)
+      const hasRated = (t.rating != null && t.rating !== "" && t.rating !== 0);
 
       const chatSec = document.getElementById('chatSection');
       const reviewSec = document.getElementById('reviewSection');
       const doneSec = document.getElementById('reviewDoneSection');
 
+      // Reset Visibility
       chatSec.classList.add('d-none');
       reviewSec.classList.add('d-none');
       doneSec.classList.add('d-none');
 
       if (!isClosed) {
-        // OPEN: Show Chat
+        // CASE 1: Ticket Open -> Show Chat
         chatSec.classList.remove('d-none');
         loadChat(t.logs);
       } else {
-        // CLOSED: Show Review Logic
+        // CASE 2: Ticket Closed
         if (hasRated) {
+          // Sub-case: Already Rated -> Show Green Success Box
           doneSec.classList.remove('d-none');
           document.getElementById('displayRating').innerText = t.rating;
-          document.getElementById('displayFeedback').innerText = t.feedback || "";
+          document.getElementById('displayFeedback').innerText = t.feedback ? `"${t.feedback}"` : "No comment added.";
         } else {
+          // Sub-case: Not Rated -> Show Yellow Review Form
           reviewSec.classList.remove('d-none');
         }
       }
-      new bootstrap.Modal(document.getElementById('ticketDetailModal')).show();
+
+      // Show Modal (Safe way to prevent duplicate backdrops)
+      const modalEl = document.getElementById('ticketDetailModal');
+      const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+      modal.show();
     }
 
+    // --- UPDATED: SUBMIT REVIEW (Fixes the Refresh Issue) ---
+    function submitReview() {
+      const ratingEl = document.querySelector('input[name="rating"]:checked');
+      if(!ratingEl) { alert("Please select a star rating."); return; }
+      
+      const ratingVal = ratingEl.value;
+      const feedbackVal = document.getElementById('reviewComment').value;
+      
+      // 1. Show Loading State
+      const btn = document.querySelector('#reviewSection button');
+      const oldText = btn.innerText;
+      btn.innerText = "Submitting..."; 
+      btn.disabled = true;
+
+      fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify({ 
+          action: 'submitReview', 
+          ticketId: currentTicketId, 
+          rating: ratingVal, 
+          feedback: feedbackVal 
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if(data.success) {
+           // 2. SUCCESS: Update Local Data Instantly (Crucial Step!)
+           // Backend update hone ke baad hum local variable 'allTickets' ko bhi update kar dete hain
+           // taaki view turant change ho jaye bina reload kiye.
+           const ticket = allTickets.find(t => t.id === currentTicketId);
+           if(ticket) {
+             ticket.rating = ratingVal;
+             ticket.feedback = feedbackVal;
+             ticket.status = "Resolved"; // Ensure status stays resolved
+           }
+
+           // 3. Refresh Modal View
+           openDetail(currentTicketId);
+           
+           // 4. Background Refresh (To sync perfectly)
+           fetchTickets();
+        } else { 
+           alert("Error: " + data.message); 
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert("Connection Error");
+      })
+      .finally(() => {
+        // Reset Button
+        btn.innerText = oldText;
+        btn.disabled = false;
+      });
+    }
     function loadChat(logs) {
       const win = document.getElementById('chatWindow'); win.innerHTML = '';
       if(!logs) { win.innerHTML = '<div class="text-center mt-5 small text-muted">Start discussion...</div>'; return; }
@@ -281,16 +351,7 @@
       .finally(() => { btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i>'; document.getElementById('chatMessage').focus(); });
     }
 
-    function submitReview() {
-      const el = document.querySelector('input[name="rating"]:checked');
-      if(!el) { alert("Select rating!"); return; }
-      const fb = document.getElementById('reviewComment').value;
-      
-      fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'submitReview', ticketId: currentTicketId, rating: el.value, feedback: fb }) })
-      .then(r=>r.json()).then(d => {
-        if(d.success) { alert("Review Submitted!"); fetchTickets().then(()=>openDetail(currentTicketId)); }
-      });
-    }
+   
 
     function handleEnter(e) { if(e.key === 'Enter') sendMessage(); }
     
