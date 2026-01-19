@@ -3,62 +3,217 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Dashboard</title>
+  <title>Admin Dashboard | IT Hub</title>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
   <style>
-    :root { --sidebar-width: 260px; --bg-color: #f8f9fa; --primary: #dc3545; --dark-sidebar: #1e293b; }
-    body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg-color); overflow-x: hidden; }
-    
-    /* Layout */
+    :root {
+      --primary: #4f46e5; /* Indigo */
+      --secondary: #64748b;
+      --bg-body: #f3f4f6;
+      --sidebar-bg: #0f172a; /* Slate 900 */
+      --sidebar-width: 280px;
+      --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --card-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-body);
+      overflow-x: hidden;
+      color: #334155;
+    }
+
+    /* --- LAYOUT --- */
     #wrapper { display: flex; width: 100%; min-height: 100vh; }
+    
     #sidebar-wrapper {
-      min-height: 100vh; width: var(--sidebar-width); background-color: var(--dark-sidebar); color: #fff;
-      position: fixed; left: 0; top: 0; z-index: 1000;
+      width: var(--sidebar-width);
+      background-color: var(--sidebar-bg);
+      color: #94a3b8;
+      position: fixed;
+      left: 0; top: 0; bottom: 0;
+      display: flex;
+      flex-direction: column; /* Key for bottom alignment */
+      z-index: 1000;
+      transition: all 0.3s;
+    }
+
+    #page-content-wrapper {
+      width: 100%;
+      margin-left: var(--sidebar-width);
+      padding: 30px;
+    }
+
+    /* --- SIDEBAR ITEMS --- */
+    .sidebar-brand {
+      padding: 2rem 1.5rem;
+      color: #fff;
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .sidebar-brand i { color: var(--primary); }
+
+    .list-group-item {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      padding: 14px 24px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      border-left: 3px solid transparent;
+    }
+
+    .list-group-item:hover {
+      background: rgba(255,255,255,0.05);
+      color: #fff;
+    }
+
+    .list-group-item.active {
+      background: linear-gradient(90deg, rgba(79, 70, 229, 0.15) 0%, transparent 100%);
+      color: #818cf8;
+      border-left-color: #818cf8;
+    }
+
+    /* Sidebar Footer (User & Logout) */
+    .sidebar-footer {
+      margin-top: auto; /* Pushes to bottom */
+      padding: 20px;
+      background: rgba(0,0,0,0.2);
+    }
+
+    .user-profile {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 15px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
     }
     
-    .list-group-item { border: none; background: transparent; color: #94a3b8; padding: 12px 25px; cursor: pointer; transition: 0.2s; text-decoration: none; display: block;}
-    .list-group-item:hover { color: #fff; background: rgba(255,255,255,0.1); }
-    .list-group-item.active { background-color: var(--primary); color: #fff; font-weight: 600; border-left: 4px solid #fff; }
+    .user-avatar {
+      width: 40px; height: 40px;
+      background: var(--primary);
+      color: white;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: bold;
+    }
+
+    /* --- DASHBOARD WIDGETS --- */
+    .stat-card {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: var(--card-shadow);
+      transition: transform 0.2s, box-shadow 0.2s;
+      border: none;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card:hover { transform: translateY(-4px); box-shadow: var(--card-hover); }
     
-    #page-content-wrapper { width: 100%; margin-left: var(--sidebar-width); padding: 20px; }
+    /* Subtle gradients for stats */
+    .stat-card::after { content: ''; position: absolute; right: -20px; top: -20px; width: 100px; height: 100px; border-radius: 50%; opacity: 0.1; }
+    .card-blue::after { background: blue; }
+    .card-warn::after { background: orange; }
+    .card-green::after { background: green; }
+    .card-gray::after { background: gray; }
 
-    /* Cards */
-    .card { border: none; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); background: white; }
-    .stat-card { transition: transform 0.2s; } 
-    .stat-card:hover { transform: translateY(-3px); }
+    .stat-value { font-size: 2rem; font-weight: 700; margin-top: 5px; color: #1e293b; }
+    .stat-label { text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px; font-weight: 600; color: #64748b; }
 
-    /* Table Styling */
-    .table thead th { background: #334155; color: #fff; border: none; padding: 12px; font-weight: 500; font-size: 0.9rem; }
-    .clickable-row { cursor: pointer; transition: 0.2s; }
-    .clickable-row:hover { background-color: #f1f5f9 !important; }
-    .table td { vertical-align: middle; padding: 12px; font-size: 0.9rem; }
+    /* --- MODERN TABLE --- */
+    .content-card {
+      background: white;
+      border-radius: 16px;
+      box-shadow: var(--card-shadow);
+      border: none;
+      overflow: hidden;
+    }
 
-    /* Custom Badges */
-    .badge-custom { padding: 6px 12px; border-radius: 50px; font-size: 0.75rem; font-weight: 600; }
-    .status-new { background-color: #e0f2fe; color: #0369a1; }        /* Light Blue */
-    .status-progress { background-color: #fef9c3; color: #854d0e; }  /* Yellow */
-    .status-resolved { background-color: #dcfce7; color: #15803d; }  /* Green */
-    .status-closed { background-color: #f1f5f9; color: #475569; }    /* Gray */
-    .status-pending { background-color: #ffedd5; color: #9a3412; }   /* Orange */
+    .table thead th {
+      background: #f8fafc;
+      color: #64748b;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.5px;
+      border-bottom: 2px solid #e2e8f0;
+      padding: 16px;
+    }
 
-    /* Priority Badges */
-    .prio-high { color: #dc2626; font-weight: bold; background: #fee2e2; padding: 4px 8px; border-radius: 4px; }
-    .prio-medium { color: #d97706; font-weight: bold; background: #fef3c7; padding: 4px 8px; border-radius: 4px; }
-    .prio-low { color: #059669; font-weight: bold; background: #d1fae5; padding: 4px 8px; border-radius: 4px; }
+    .table tbody td {
+      padding: 16px;
+      vertical-align: middle;
+      color: #334155;
+      font-size: 0.9rem;
+      border-bottom: 1px solid #f1f5f9;
+    }
 
-    /* Chat Styling */
-    .chat-container { background: #e2e8f0; border-radius: 8px; height: 350px; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
-    .chat-bubble { max-width: 80%; padding: 10px 14px; border-radius: 12px; font-size: 0.9rem; display: flex; flex-direction: column; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-    .chat-left { align-self: flex-start; background: #fff; border-bottom-left-radius: 2px; }
-    .chat-right { align-self: flex-end; background: #3b82f6; color: white; border-bottom-right-radius: 2px; }
-    
-    /* Select2 */
-    .select2-container { z-index: 9999; width: 100% !important; }
+    .clickable-row:hover td { background-color: #f8fafc; cursor: pointer; }
+
+    /* Badges */
+    .badge-modern { padding: 6px 12px; border-radius: 30px; font-weight: 600; font-size: 0.75rem; }
+    .status-new { background: #eff6ff; color: #2563eb; }
+    .status-progress { background: #fefce8; color: #ca8a04; }
+    .status-resolved { background: #f0fdf4; color: #16a34a; }
+    .status-closed { background: #f1f5f9; color: #475569; }
+    .status-pending { background: #fff7ed; color: #c2410c; }
+
+    .priority-dot { height: 8px; width: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+    .p-high { background: #ef4444; box-shadow: 0 0 0 2px #fee2e2; }
+    .p-med { background: #f59e0b; box-shadow: 0 0 0 2px #fef3c7; }
+    .p-low { background: #10b981; box-shadow: 0 0 0 2px #d1fae5; }
+
+    /* --- CHAT MODERN --- */
+    .chat-container {
+      background: #f1f5f9;
+      border-radius: 12px;
+      height: 400px;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .chat-bubble {
+      max-width: 75%;
+      padding: 12px 16px;
+      border-radius: 18px;
+      font-size: 0.9rem;
+      line-height: 1.4;
+      position: relative;
+    }
+
+    .chat-left {
+      align-self: flex-start;
+      background: white;
+      color: #334155;
+      border-bottom-left-radius: 4px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    .chat-right {
+      align-self: flex-end;
+      background: var(--primary);
+      color: white;
+      border-bottom-right-radius: 4px;
+      box-shadow: 0 4px 6px -2px rgba(79, 70, 229, 0.2);
+    }
   </style>
 </head>
 <body>
@@ -66,164 +221,214 @@
 <div id="wrapper">
   
   <div id="sidebar-wrapper">
-    <div class="p-4 fs-4 fw-bold text-center border-bottom border-secondary text-danger">
-      <i class="fas fa-user-shield me-2"></i> Admin Panel
+    <div class="sidebar-brand">
+      <i class="fa-solid fa-layer-group"></i>
+      <span>IT Ticket Hub</span>
     </div>
-    <div class="list-group list-group-flush mt-3">
-      <a href="dashboard.html" class="list-group-item">
+
+    <div class="list-group list-group-flush mt-3 px-3 gap-1">
+      <a href="dashboard.html" class="list-group-item rounded">
         <i class="fas fa-chart-pie me-3"></i> Analytics
       </a>
-
-      <a id="menu-all" class="list-group-item active" onclick="switchTab('All')">
+      <a id="menu-all" class="list-group-item active rounded" onclick="switchTab('All')">
         <i class="fas fa-list me-3"></i> All Tickets
       </a>
-      <a id="menu-open" class="list-group-item" onclick="switchTab('Open')">
-        <i class="fas fa-folder-open me-3"></i> Open Tickets
+      <a id="menu-open" class="list-group-item rounded" onclick="switchTab('Open')">
+        <i class="fas fa-folder-open me-3"></i> Open
       </a>
-      <a id="menu-resolved" class="list-group-item" onclick="switchTab('Resolved')">
+      <a id="menu-resolved" class="list-group-item rounded" onclick="switchTab('Resolved')">
         <i class="fas fa-check-circle me-3"></i> Resolved
       </a>
-      <a id="menu-closed" class="list-group-item" onclick="switchTab('Closed')">
+      <a id="menu-closed" class="list-group-item rounded" onclick="switchTab('Closed')">
         <i class="fas fa-archive me-3"></i> Closed
       </a>
-
-      <a href="notification.html" class="list-group-item">
+      <a href="notification.html" class="list-group-item rounded">
         <i class="fas fa-bell me-3"></i> Notifications
       </a>
-
-      <a class="list-group-item text-danger mt-5" onclick="logout()">
-        <i class="fas fa-sign-out-alt me-3"></i> Logout
-      </a>
     </div>
-    <div class="mt-auto p-3 text-center small text-secondary">User: <span id="displayUser" class="text-white">Admin</span></div>
-  </div>
 
+    <div class="sidebar-footer">
+      <div class="user-profile">
+        <div class="user-avatar" id="userInitial">A</div>
+        <div style="overflow: hidden;">
+          <div style="color: white; font-weight: 600; font-size: 0.9rem;" id="displayUser">Admin</div>
+          <div style="color: #64748b; font-size: 0.75rem;">Administrator</div>
+        </div>
+      </div>
+      <button onclick="logout()" class="btn btn-danger w-100 btn-sm">
+        <i class="fas fa-sign-out-alt me-2"></i> Log Out
+      </button>
+    </div>
+  </div>
   <div id="page-content-wrapper">
     
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <h3 class="fw-bold text-dark">Ticket Management</h3>
+    <div class="d-flex justify-content-between align-items-center mb-5">
       <div>
-        <a href="notification.html" class="btn btn-outline-warning btn-sm me-2 shadow-sm"><i class="fas fa-bell"></i></a>
-        
-        <button class="btn btn-danger text-white btn-sm me-2 shadow-sm" onclick="openCreateModal()"><i class="fas fa-plus"></i> Create Ticket</button>
-        <button class="btn btn-outline-dark btn-sm shadow-sm" onclick="initFetch()"><i class="fas fa-sync"></i> Refresh</button>
+        <h3 class="fw-bold mb-1">Ticket Management</h3>
+        <p class="text-muted small mb-0">Manage and track all support requests</p>
+      </div>
+      <div>
+        <button class="btn btn-primary shadow-sm me-2" onclick="openCreateModal()">
+          <i class="fas fa-plus me-2"></i>New Ticket
+        </button>
+        <button class="btn btn-white bg-white border shadow-sm" onclick="initFetch()">
+          <i class="fas fa-sync-alt text-muted"></i>
+        </button>
       </div>
     </div>
 
-    <div class="row g-3 mb-4">
-      <div class="col-md-3 col-6"><div class="card stat-card p-3 border-start border-4 border-primary"><small class="text-muted fw-bold">TOTAL</small><h3 class="fw-bold mb-0 text-primary" id="statTotal">0</h3></div></div>
-      <div class="col-md-3 col-6"><div class="card stat-card p-3 border-start border-4 border-warning"><small class="text-muted fw-bold">OPEN</small><h3 class="fw-bold mb-0 text-warning" id="statOpen">0</h3></div></div>
-      <div class="col-md-3 col-6"><div class="card stat-card p-3 border-start border-4 border-success"><small class="text-muted fw-bold">RESOLVED</small><h3 class="fw-bold mb-0 text-success" id="statResolved">0</h3></div></div>
-      <div class="col-md-3 col-6"><div class="card stat-card p-3 border-start border-4 border-secondary"><small class="text-muted fw-bold">CLOSED</small><h3 class="fw-bold mb-0 text-secondary" id="statClosed">0</h3></div></div>
+    <div class="row g-4 mb-5">
+      <div class="col-md-3 col-6">
+        <div class="stat-card card-blue">
+          <div class="stat-label">Total Tickets</div>
+          <div class="stat-value" id="statTotal">0</div>
+        </div>
+      </div>
+      <div class="col-md-3 col-6">
+        <div class="stat-card card-warn">
+          <div class="stat-label">Pending / Open</div>
+          <div class="stat-value text-warning" id="statOpen">0</div>
+        </div>
+      </div>
+      <div class="col-md-3 col-6">
+        <div class="stat-card card-green">
+          <div class="stat-label">Resolved</div>
+          <div class="stat-value text-success" id="statResolved">0</div>
+        </div>
+      </div>
+      <div class="col-md-3 col-6">
+        <div class="stat-card card-gray">
+          <div class="stat-label">Closed</div>
+          <div class="stat-value text-secondary" id="statClosed">0</div>
+        </div>
+      </div>
     </div>
 
-    <div class="card p-3 mb-3">
+    <div class="content-card p-4 mb-4">
       <div class="row g-3 align-items-center">
         <div class="col-md-6">
           <div class="input-group">
-            <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
-            <input type="text" id="searchInput" class="form-control border-start-0" placeholder="Search ID, Name, Email, Status, Priority..." onkeyup="handleSearch()">
+            <span class="input-group-text bg-light border-0"><i class="fas fa-search text-muted"></i></span>
+            <input type="text" id="searchInput" class="form-control bg-light border-0" placeholder="Search tickets..." onkeyup="handleSearch()">
           </div>
         </div>
         <div class="col-md-6 text-md-end">
-          <label class="small fw-bold me-2">Show:</label>
-          <select id="rowsPerPage" class="form-select d-inline-block w-auto form-select-sm" onchange="changeRows()">
-            <option value="10">10</option>
-            <option value="20" selected>20</option>
-            <option value="50">50</option>
-            <option value="100">100</option>
-            <option value="200">200</option>
-            <option value="99999">All</option>
+          <select id="rowsPerPage" class="form-select d-inline-block w-auto border-0 bg-light" onchange="changeRows()">
+            <option value="10">10 rows</option>
+            <option value="20" selected>20 rows</option>
+            <option value="50">50 rows</option>
           </select>
         </div>
       </div>
     </div>
 
-    <div class="card shadow-sm overflow-hidden">
+    <div class="content-card">
       <div class="table-responsive">
-        <table class="table table-hover mb-0">
+        <table class="table mb-0">
           <thead>
             <tr>
               <th class="ps-4">Ticket ID</th>
-              <th>User / Employee</th>
+              <th>User</th>
               <th>Subject</th>
               <th>Priority</th>
               <th>Status</th>
               <th>Date</th>
-              <th>Action</th>
+              <th></th>
             </tr>
           </thead>
           <tbody id="adminBody">
-            <tr><td colspan="7" class="text-center py-5 text-muted"><i class="fas fa-spinner fa-spin"></i> Loading Tickets...</td></tr>
+            <tr><td colspan="7" class="text-center py-5 text-muted"><i class="fas fa-circle-notch fa-spin me-2"></i> Loading Tickets...</td></tr>
           </tbody>
         </table>
       </div>
       
-      <div class="card-footer bg-white d-flex justify-content-between align-items-center p-3">
-        <small class="text-muted">Showing <span id="startRow">0</span> to <span id="endRow">0</span> of <span id="visibleTotal">0</span> entries</small>
+      <div class="d-flex justify-content-between align-items-center p-3 border-top bg-light">
+        <small class="text-muted">Showing <span id="startRow">0</span> - <span id="endRow">0</span> of <span id="visibleTotal">0</span></small>
         <div class="btn-group">
-          <button class="btn btn-sm btn-outline-secondary" id="prevBtn" onclick="changePage(-1)">Previous</button>
-          <button class="btn btn-sm btn-outline-secondary" id="nextBtn" onclick="changePage(1)">Next</button>
+          <button class="btn btn-sm btn-white border" id="prevBtn" onclick="changePage(-1)">Prev</button>
+          <button class="btn btn-sm btn-white border" id="nextBtn" onclick="changePage(1)">Next</button>
         </div>
       </div>
     </div>
 
   </div>
-</div>
+  </div>
 
 <div class="modal fade" id="adminModal" tabindex="-1" data-bs-backdrop="static">
   <div class="modal-dialog modal-lg modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header bg-dark text-white">
-        <h5 class="modal-title">Ticket #<span id="modalId"></span></h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header border-0 pb-0">
+        <div>
+          <h5 class="modal-title fw-bold">Ticket #<span id="modalId"></span></h5>
+          <small class="text-muted">Manage user request</small>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body bg-light">
-        <div class="card border-0 shadow-sm mb-3 p-3">
-          <div class="row text-center">
-            <div class="col-4 border-end">User<br><strong class="text-primary" id="modalUser"></strong></div>
-            <div class="col-4 border-end">Priority<br><span id="modalPriority"></span></div>
-            <div class="col-4">Status<br><span id="modalStatusDisplay"></span></div>
-          </div>
-          <div class="mt-3 pt-3 border-top">
-            <small class="text-muted fw-bold">DESCRIPTION:</small>
-            <p class="small text-dark mb-0" id="modalDesc"></p>
-          </div>
+      <div class="modal-body">
+        
+        <div class="bg-light rounded p-3 mb-3 d-flex justify-content-between align-items-center">
+          <div><small class="text-muted d-block">Requested By</small><span class="fw-bold" id="modalUser">User</span></div>
+          <div><small class="text-muted d-block">Priority</small><span id="modalPriority">High</span></div>
+          <div><small class="text-muted d-block">Status</small><span id="modalStatusDisplay">New</span></div>
         </div>
 
-        <h6 class="fw-bold text-secondary px-1">Discussion</h6>
-        <div id="chatWindow" class="chat-container mb-0" style="border-bottom-left-radius: 0; border-bottom-right-radius: 0;"></div>
+        <div class="mb-4">
+          <label class="small text-muted fw-bold">DESCRIPTION</label>
+          <p class="text-dark bg-white p-3 rounded border" id="modalDesc" style="font-size: 0.95rem;"></p>
+        </div>
 
-        <div class="bg-white p-2 border border-top-0 rounded-bottom d-flex gap-2 align-items-center">
-          <select id="updateStatus" class="form-select w-auto fw-bold text-primary border-primary">
+        <h6 class="fw-bold mb-3">Conversation History</h6>
+        <div id="chatWindow" class="chat-container mb-3"></div>
+
+        <div class="d-flex gap-2">
+          <select id="updateStatus" class="form-select w-auto fw-bold text-primary">
             <option value="New">New</option>
             <option value="In Progress">In Progress</option>
             <option value="Pending">Pending</option>
             <option value="Resolved">Resolved</option>
             <option value="Closed">Closed</option>
           </select>
-          <input type="text" id="adminMsg" class="form-control" placeholder="Type reply here..." onkeypress="handleEnter(event)">
-          <button class="btn btn-primary px-3" id="sendBtn" onclick="sendUpdate()"><i class="fas fa-paper-plane"></i></button>
+          <input type="text" id="adminMsg" class="form-control" placeholder="Type a reply..." onkeypress="handleEnter(event)">
+          <button class="btn btn-primary px-4" id="sendBtn" onclick="sendUpdate()">Send</button>
         </div>
+
       </div>
     </div>
   </div>
 </div>
 
 <div class="modal fade" id="createModal" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header bg-danger text-white"><h5 class="modal-title">Create Ticket for User</h5><button class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
-      <div class="modal-body">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">Create New Ticket</h5>
+        <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
         <form id="createForm">
           <div class="mb-3">
-            <label class="fw-bold small">Select User</label>
+            <label class="form-label small fw-bold text-muted">Select User</label>
             <select id="userSelect" class="form-select select2-init" style="width: 100%;" required><option value="">Loading...</option></select>
           </div>
-          <div class="mb-3"><label class="fw-bold small">Subject</label><select id="newSubject" class="form-select"><option>Hardware</option><option>Software</option><option>Network</option><option>Other</option></select></div>
-          <div class="mb-3"><label class="fw-bold small">Priority</label><select id="newPriority" class="form-select"><option>Low</option><option selected>Medium</option><option>High</option></select></div>
-          <div class="mb-3"><label class="fw-bold small">Description</label><textarea id="newDesc" class="form-control" rows="3" required></textarea></div>
-          <button type="submit" id="createBtn" class="btn btn-danger w-100">Create Ticket</button>
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label small fw-bold text-muted">Subject</label>
+              <select id="newSubject" class="form-select">
+                <option>Hardware</option><option>Software</option><option>Network</option><option>Access/Login</option><option>Other</option>
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-bold text-muted">Priority</label>
+              <select id="newPriority" class="form-select">
+                <option>Low</option><option selected>Medium</option><option>High</option>
+              </select>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-muted">Description</label>
+            <textarea id="newDesc" class="form-control" rows="4" placeholder="Describe the issue..." required></textarea>
+          </div>
+          <button type="submit" id="createBtn" class="btn btn-primary w-100 py-2">Create Ticket</button>
         </form>
       </div>
     </div>
@@ -235,14 +440,17 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script>
-  // *** API URL ***
-  const API_URL = "https://script.google.com/macros/s/AKfycbzBcGQH3pVWo1AyG6yJbhhwNs6Jxtxo1eUxxAJ113IFHkKG7AmdJZmQMZeiUVk0loYf/exec"; // REPLACE THIS!
+  // *** PASTE YOUR GOOGLE APPS SCRIPT URL HERE ***
+  const API_URL = "https://script.google.com/macros/s/AKfycbzBcGQH3pVWo1AyG6yJbhhwNs6Jxtxo1eUxxAJ113IFHkKG7AmdJZmQMZeiUVk0loYf/exec";
 
+  // Auth Check
   const userId = sessionStorage.getItem('userId');
   const role = sessionStorage.getItem('role');
-
   if(role !== 'Admin') window.location.href = 'index.html';
+  
+  // Set Sidebar Info
   document.getElementById('displayUser').innerText = userId;
+  document.getElementById('userInitial').innerText = userId.charAt(0).toUpperCase();
 
   let fullData = [], filteredData = [], currentPage = 1, rowsPerPage = 20, currentTab = 'All', currentTicketId = null;
 
@@ -262,7 +470,7 @@
     fetch(`${API_URL}?action=getUsers`)
       .then(res => res.json())
       .then(users => {
-        const sel = $('#userSelect'); sel.empty().append('<option value="">Select a User</option>');
+        const sel = $('#userSelect'); sel.empty().append('<option value="">Select User</option>');
         users.forEach(u => sel.append(new Option(u, u)));
         sel.select2({ theme: 'bootstrap-5', dropdownParent: $('#createModal') });
       });
@@ -275,17 +483,16 @@
     document.getElementById('statClosed').innerText = fullData.filter(t => t.status === 'Closed').length;
   }
 
-  // --- IMPROVED FILTER & SEARCH ---
   function applyFilters() {
     const search = document.getElementById('searchInput').value.toLowerCase();
     
-    // 1. Filter by Tab
+    // Tab Filter
     let temp = fullData;
     if (currentTab === 'Open') temp = fullData.filter(t => t.status !== 'Resolved' && t.status !== 'Closed');
     else if (currentTab === 'Resolved') temp = fullData.filter(t => t.status === 'Resolved');
     else if (currentTab === 'Closed') temp = fullData.filter(t => t.status === 'Closed');
 
-    // 2. Filter by Search (Checks ID, User, Subject, Priority, Status, Date)
+    // Search Filter
     if (search) {
       temp = temp.filter(t => 
         (t.id && t.id.toLowerCase().includes(search)) ||
@@ -309,26 +516,24 @@
     const tbody = document.getElementById('adminBody'); 
     tbody.innerHTML = '';
     
-    if(!pageData.length) { tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted">No tickets found.</td></tr>'; return; }
+    if(!pageData.length) { tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted">No tickets found matching your filters.</td></tr>'; return; }
 
     pageData.forEach(t => {
-      // Fix Status Colors
       let badgeHtml = getStatusBadge(t.status);
-      let prioClass = t.priority === 'High' ? 'prio-high' : (t.priority === 'Low' ? 'prio-low' : 'prio-medium');
+      let prioHtml = getPriorityDot(t.priority);
 
       tbody.innerHTML += `
         <tr class="clickable-row" onclick="openAdminModal('${t.id}')">
-          <td class="ps-4 fw-bold small text-dark">${t.id}</td>
-          <td class="text-primary fw-bold small">${t.user}</td>
+          <td class="ps-4 fw-bold text-dark">${t.id}</td>
+          <td class="text-muted"><i class="far fa-user me-2 small"></i>${t.user}</td>
           <td>${t.subject}</td>
-          <td><span class="${prioClass}">${t.priority}</span></td>
+          <td>${prioHtml} ${t.priority}</td>
           <td>${badgeHtml}</td>
           <td class="small text-muted">${t.date}</td>
-          <td><button class="btn btn-sm btn-outline-dark py-0 px-2">Edit</button></td>
+          <td><button class="btn btn-sm btn-light text-primary rounded-circle"><i class="fas fa-chevron-right"></i></button></td>
         </tr>`;
     });
     
-    // Update Pagination Info
     document.getElementById('visibleTotal').innerText = filteredData.length;
     document.getElementById('startRow').innerText = filteredData.length ? start + 1 : 0;
     document.getElementById('endRow').innerText = Math.min(end, filteredData.length);
@@ -336,18 +541,22 @@
     document.getElementById('nextBtn').disabled = end >= filteredData.length;
   }
 
-  // --- HELPER: STATUS BADGE LOGIC ---
   function getStatusBadge(status) {
-    if (!status) return '<span class="badge badge-custom status-closed">Unknown</span>';
-    let s = status.toLowerCase();
-    if (s.includes('new')) return `<span class="badge badge-custom status-new">${status}</span>`;
-    if (s.includes('progress')) return `<span class="badge badge-custom status-progress">${status}</span>`;
-    if (s.includes('resolved')) return `<span class="badge badge-custom status-resolved">${status}</span>`;
-    if (s.includes('pending')) return `<span class="badge badge-custom status-pending">${status}</span>`;
-    return `<span class="badge badge-custom status-closed">${status}</span>`;
+    let s = (status || '').toLowerCase();
+    if (s.includes('new')) return `<span class="badge-modern status-new">New</span>`;
+    if (s.includes('progress')) return `<span class="badge-modern status-progress">In Progress</span>`;
+    if (s.includes('resolved')) return `<span class="badge-modern status-resolved">Resolved</span>`;
+    if (s.includes('pending')) return `<span class="badge-modern status-pending">Pending</span>`;
+    return `<span class="badge-modern status-closed">${status}</span>`;
   }
 
-  // --- ADMIN MODAL & CHAT ---
+  function getPriorityDot(p) {
+    if(p === 'High') return `<span class="priority-dot p-high"></span>`;
+    if(p === 'Medium') return `<span class="priority-dot p-med"></span>`;
+    return `<span class="priority-dot p-low"></span>`;
+  }
+
+  // --- MODAL & CHAT ---
   function openAdminModal(id) {
     currentTicketId = id;
     const t = fullData.find(x => x.id === id);
@@ -355,7 +564,7 @@
 
     document.getElementById('modalId').innerText = t.id;
     document.getElementById('modalUser').innerText = t.user;
-    document.getElementById('modalPriority').innerHTML = `<span class="${t.priority==='High'?'text-danger':''}">${t.priority}</span>`;
+    document.getElementById('modalPriority').innerHTML = getPriorityDot(t.priority) + " " + t.priority;
     document.getElementById('modalStatusDisplay').innerHTML = getStatusBadge(t.status);
     document.getElementById('modalDesc').innerText = t.desc;
     document.getElementById('updateStatus').value = t.status;
@@ -366,7 +575,7 @@
 
   function loadChat(logs, user) {
     const win = document.getElementById('chatWindow'); win.innerHTML = '';
-    if(!logs) { win.innerHTML = '<div class="text-center mt-5 small text-muted">No logs.</div>'; return; }
+    if(!logs) { win.innerHTML = '<div class="text-center mt-5 small text-muted">No discussion yet.</div>'; return; }
 
     const pattern = /^\[(.*?)\] \[(.*?)\]: (.*)$/;
     logs.split('\n').forEach(line => {
@@ -375,13 +584,13 @@
       let time="", u="", msg=line;
       if(m) { time=m[1]; u=m[2]; msg=m[3]; }
 
-      // Admin (Right), User (Left)
       const isMe = u === 'Admin' || u.toLowerCase() === userId.toLowerCase();
       
       win.innerHTML += `
         <div class="chat-bubble ${isMe?'chat-right':'chat-left'}">
-          <div style="font-size:0.6rem; font-weight:bold; color:${isMe?'#e0e0e0':'#2563eb'}">${u}</div>
-          <span>${msg}</span><div class="text-end" style="font-size:0.6rem; opacity:0.7;">${time}</div>
+          ${!isMe ? `<div style="font-size:0.7rem; font-weight:700; color:#4f46e5; margin-bottom:2px;">${u}</div>` : ''}
+          <span>${msg}</span>
+          <div style="font-size:0.65rem; opacity:0.6; text-align:right; margin-top:4px;">${time}</div>
         </div>`;
     });
     setTimeout(() => win.scrollTop = win.scrollHeight, 100);
@@ -390,7 +599,11 @@
   function sendUpdate() {
     const msg = document.getElementById('adminMsg').value;
     const st = document.getElementById('updateStatus').value;
-    const btn = document.getElementById('sendBtn'); btn.disabled=true;
+    const btn = document.getElementById('sendBtn'); 
+    
+    if(!msg && st === fullData.find(x=>x.id===currentTicketId).status) return; // Prevent empty updates
+
+    btn.disabled=true; btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>';
     
     fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'adminUpdate', ticketId: currentTicketId, userId: userId, message: msg, status: st }) })
     .then(r=>r.json()).then(d => {
@@ -403,7 +616,7 @@
         document.getElementById('modalStatusDisplay').innerHTML = getStatusBadge(st); 
         loadChat(t.logs, t.user);
       }
-    }).finally(() => btn.disabled=false);
+    }).finally(() => { btn.disabled=false; btn.innerHTML="Send"; });
   }
 
   function handleEnter(e) { if(e.key === 'Enter') sendUpdate(); }
@@ -421,16 +634,34 @@
     applyFilters(); 
   }
 
-  // Create Ticket
   function openCreateModal() { new bootstrap.Modal(document.getElementById('createModal')).show(); }
+  
   document.getElementById('createForm').addEventListener('submit', function(e) {
     e.preventDefault();
     const selUser = $('#userSelect').val();
-    if(!selUser) { alert("Select a user"); return; }
+    if(!selUser) { alert("Please select a user"); return; }
+    
     const btn = document.getElementById('createBtn'); btn.disabled=true; btn.innerText="Creating...";
-    fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'createTicket', userId: selUser, creatorId: userId, subject: document.getElementById('newSubject').value, priority: document.getElementById('newPriority').value, desc: document.getElementById('newDesc').value }) })
+    
+    fetch(API_URL, { 
+      method: 'POST', 
+      body: JSON.stringify({ 
+        action: 'createTicket', 
+        userId: selUser, 
+        creatorId: userId, 
+        subject: document.getElementById('newSubject').value, 
+        priority: document.getElementById('newPriority').value, 
+        desc: document.getElementById('newDesc').value 
+      }) 
+    })
     .then(r=>r.json()).then(d => {
-      if(d.success) { bootstrap.Modal.getInstance(document.getElementById('createModal')).hide(); document.getElementById('createForm').reset(); $('#userSelect').val(null).trigger('change'); alert("Created!"); initFetch(); } 
+      if(d.success) { 
+        bootstrap.Modal.getInstance(document.getElementById('createModal')).hide(); 
+        document.getElementById('createForm').reset(); 
+        $('#userSelect').val(null).trigger('change'); 
+        alert("Ticket Created Successfully"); 
+        initFetch(); 
+      } 
       else alert(d.message);
     }).finally(() => { btn.disabled=false; btn.innerText="Create Ticket"; });
   });
