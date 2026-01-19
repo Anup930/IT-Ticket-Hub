@@ -20,7 +20,6 @@
       position: fixed; left: 0; top: 0; z-index: 1000;
     }
     
-    /* Sidebar Links */
     .list-group-item { border: none; background: transparent; color: #9ca3af; padding: 12px 25px; cursor: pointer; transition: 0.2s; }
     .list-group-item:hover { color: #fff; background: rgba(255,255,255,0.05); }
     .list-group-item.active { background-color: var(--primary); color: #fff; font-weight: 600; border-left: 4px solid #fff; }
@@ -28,9 +27,13 @@
 
     #page-content-wrapper { width: 100%; margin-left: var(--sidebar-width); padding: 20px; }
 
-    /* Controls Bar (Search & Rows) */
+    /* Controls Bar */
     .controls-bar { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center; justify-content: space-between; }
     .search-box { max-width: 300px; flex-grow: 1; }
+
+    /* Stats Cards */
+    .stat-card { transition: transform 0.2s; }
+    .stat-card:hover { transform: translateY(-3px); }
 
     /* Table */
     .card { border: none; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
@@ -95,10 +98,37 @@
       <button class="btn btn-outline-dark btn-sm" onclick="initFetch()"><i class="fas fa-sync"></i> Refresh Data</button>
     </div>
 
+    <div class="row g-3 mb-4">
+      <div class="col-md-3 col-6">
+        <div class="card stat-card p-3 border-start border-4 border-primary">
+          <small class="text-muted fw-bold text-uppercase">Total Tickets</small>
+          <h3 class="fw-bold mb-0 text-primary" id="statTotal">0</h3>
+        </div>
+      </div>
+      <div class="col-md-3 col-6">
+        <div class="card stat-card p-3 border-start border-4 border-warning">
+          <small class="text-muted fw-bold text-uppercase">Open</small>
+          <h3 class="fw-bold mb-0 text-warning" id="statOpen">0</h3>
+        </div>
+      </div>
+      <div class="col-md-3 col-6">
+        <div class="card stat-card p-3 border-start border-4 border-success">
+          <small class="text-muted fw-bold text-uppercase">Resolved</small>
+          <h3 class="fw-bold mb-0 text-success" id="statResolved">0</h3>
+        </div>
+      </div>
+      <div class="col-md-3 col-6">
+        <div class="card stat-card p-3 border-start border-4 border-secondary">
+          <small class="text-muted fw-bold text-uppercase">Closed</small>
+          <h3 class="fw-bold mb-0 text-secondary" id="statClosed">0</h3>
+        </div>
+      </div>
+    </div>
+
     <div class="controls-bar">
       <div class="search-box input-group">
         <span class="input-group-text bg-white"><i class="fas fa-search"></i></span>
-        <input type="text" id="searchInput" class="form-control" placeholder="Search ID, Name, Email, Status..." onkeyup="handleSearch()">
+        <input type="text" id="searchInput" class="form-control" placeholder="Search ID, Name, Email..." onkeyup="handleSearch()">
       </div>
       
       <div class="d-flex align-items-center gap-2">
@@ -108,18 +138,8 @@
           <option value="20" selected>20</option>
           <option value="50">50</option>
           <option value="100">100</option>
-          <option value="200">200</option>
           <option value="9999">All</option>
         </select>
-      </div>
-    </div>
-
-    <div class="row g-3 mb-3">
-      <div class="col-md-3">
-        <div class="card p-3 border-start border-4 border-primary">
-          <small class="text-muted fw-bold">VISIBLE TICKETS</small>
-          <h3 class="fw-bold mb-0" id="visibleCount">0</h3>
-        </div>
       </div>
     </div>
 
@@ -144,7 +164,7 @@
       </div>
       
       <div class="card-footer bg-white pagination-bar">
-        <div class="page-info">Showing <span id="startRow">0</span> to <span id="endRow">0</span> of <span id="totalRows">0</span></div>
+        <div class="page-info">Showing <span id="startRow">0</span> to <span id="endRow">0</span> of <span id="visibleTotal">0</span> entries</div>
         <div class="btn-group">
           <button class="btn btn-outline-secondary btn-sm" id="prevBtn" onclick="changePage(-1)" disabled>Previous</button>
           <button class="btn btn-outline-secondary btn-sm" id="nextBtn" onclick="changePage(1)" disabled>Next</button>
@@ -202,9 +222,9 @@
   if(role !== 'Admin') window.location.href = 'index.html';
   document.getElementById('displayUser').innerText = userId;
 
-  // --- GLOBAL VARIABLES ---
-  let fullData = [];      // Stores ALL tickets fetched from server
-  let filteredData = [];  // Stores tickets after Filter/Search
+  // GLOBAL VARIABLES
+  let fullData = [];
+  let filteredData = [];
   let currentPage = 1;
   let rowsPerPage = 20;
   let currentTab = 'All';
@@ -212,22 +232,37 @@
 
   window.onload = () => initFetch();
 
-  // --- 1. FETCH DATA ---
+  // --- FETCH DATA ---
   function initFetch() {
     fetch(`${API_URL}?action=getAdminData&userId=${userId}`)
       .then(res => res.json())
       .then(data => {
         fullData = data || [];
+        updateDashboardStats(); // Calculate stats
         applyFilters(); // Initial render
       })
       .catch(err => console.error(err));
   }
 
-  // --- 2. FILTER & SEARCH LOGIC ---
+  // --- CALCULATE STATS ---
+  function updateDashboardStats() {
+    const total = fullData.length;
+    // Open = Not Resolved AND Not Closed
+    const open = fullData.filter(t => t.status !== 'Resolved' && t.status !== 'Closed').length;
+    const resolved = fullData.filter(t => t.status === 'Resolved').length;
+    const closed = fullData.filter(t => t.status === 'Closed').length;
+
+    document.getElementById('statTotal').innerText = total;
+    document.getElementById('statOpen').innerText = open;
+    document.getElementById('statResolved').innerText = resolved;
+    document.getElementById('statClosed').innerText = closed;
+  }
+
+  // --- FILTER & SEARCH ---
   function applyFilters() {
     const search = document.getElementById('searchInput').value.toLowerCase();
     
-    // Step 1: Filter by Tab (Menu)
+    // Tab Filter
     let temp = fullData;
     if (currentTab === 'Open') {
       temp = fullData.filter(t => t.status !== 'Resolved' && t.status !== 'Closed');
@@ -237,7 +272,7 @@
       temp = fullData.filter(t => t.status === 'Closed');
     }
 
-    // Step 2: Filter by Search Text
+    // Search Filter
     if (search) {
       temp = temp.filter(t => 
         (t.id && t.id.toString().toLowerCase().includes(search)) ||
@@ -248,19 +283,17 @@
     }
 
     filteredData = temp;
-    currentPage = 1; // Reset to page 1 on new filter
+    currentPage = 1;
     renderPagination();
   }
 
-  // --- 3. PAGINATION & RENDER ---
+  // --- RENDER PAGINATION ---
   function renderPagination() {
     const total = filteredData.length;
     const start = (currentPage - 1) * rowsPerPage;
     const end = start + parseInt(rowsPerPage);
     
     const pageData = filteredData.slice(start, end);
-    
-    // Render Table
     const tbody = document.getElementById('adminBody');
     tbody.innerHTML = '';
     
@@ -282,44 +315,34 @@
       });
     }
 
-    // Update Controls
-    document.getElementById('visibleCount').innerText = total;
+    // Update Counts
+    document.getElementById('visibleTotal').innerText = total;
     document.getElementById('startRow').innerText = total === 0 ? 0 : start + 1;
     document.getElementById('endRow').innerText = Math.min(end, total);
-    document.getElementById('totalRows').innerText = total;
 
     document.getElementById('prevBtn').disabled = currentPage === 1;
     document.getElementById('nextBtn').disabled = end >= total;
   }
 
-  // --- 4. CONTROL HANDLERS ---
+  // --- CONTROLS ---
   function handleSearch() { applyFilters(); }
-  
-  function changeRows() {
-    rowsPerPage = parseInt(document.getElementById('rowsPerPage').value);
-    applyFilters();
-  }
-
-  function changePage(dir) {
-    currentPage += dir;
-    renderPagination();
-  }
+  function changeRows() { rowsPerPage = parseInt(document.getElementById('rowsPerPage').value); applyFilters(); }
+  function changePage(dir) { currentPage += dir; renderPagination(); }
 
   function switchTab(tabName) {
     currentTab = tabName;
-    // Update Active Class in Sidebar
     document.querySelectorAll('.list-group-item').forEach(el => el.classList.remove('active'));
     
     let menuId = 'menu-all';
     if(tabName === 'Open') menuId = 'menu-open';
     if(tabName === 'Resolved') menuId = 'menu-resolved';
     if(tabName === 'Closed') menuId = 'menu-closed';
-    
     document.getElementById(menuId).classList.add('active');
+    
     applyFilters();
   }
 
-  // --- 5. MODAL LOGIC (Same as before) ---
+  // --- MODAL & CHAT ---
   function openAdminModal(id) {
     currentTicketId = id;
     const t = fullData.find(x => x.id === id);
@@ -347,8 +370,7 @@
       let time="", u="", msg=line;
       if(m) { time=m[1]; u=m[2]; msg=m[3]; }
 
-      // Admin logic: If I sent it (Admin) or User ID matches session, it's 'Me' (Right side)
-      // Otherwise it's the User (Left side)
+      // Admin logic: If I sent it (Admin) or User ID matches session, Right Side
       const isMe = u === 'Admin' || u.toLowerCase() === userId.toLowerCase(); 
       
       win.innerHTML += `
@@ -365,31 +387,24 @@
     const status = document.getElementById('updateStatus').value;
     const btn = document.getElementById('sendBtn'); btn.disabled=true;
 
-    // Send to Backend
     fetch(API_URL, {
       method: 'POST',
-      body: JSON.stringify({
-        action: 'adminUpdate',
-        ticketId: currentTicketId,
-        userId: userId, 
-        message: msg,
-        status: status
-      })
+      body: JSON.stringify({ action: 'adminUpdate', ticketId: currentTicketId, userId: userId, message: msg, status: status })
     })
     .then(res => res.json())
     .then(data => {
       if(data.success) {
         document.getElementById('adminMsg').value = '';
-        // Update Local Data Instantly (No Full Refresh Needed)
+        // Update Local Data Instantly
         const t = fullData.find(x => x.id === currentTicketId);
         if(t) {
-           t.status = status; // Update status in local array
-           // Append fake log locally for instant feedback
+           t.status = status; 
            if(msg) t.logs += `\n[Now] [Admin]: ${msg}`; 
         }
-        applyFilters(); // Re-render table to show new status
         
-        // Refresh Modal
+        updateDashboardStats(); // Update stats cards
+        applyFilters(); // Re-render list
+        
         document.getElementById('modalStatusDisplay').innerText = status;
         loadChat(t.logs, t.user);
       } else alert("Error updating");
