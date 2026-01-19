@@ -6,203 +6,106 @@
   <title>Admin Dashboard</title>
   
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
   <style>
-    /* Admin Theme */
     :root { --sidebar-width: 260px; --bg-color: #f3f4f6; --primary: #dc3545; --dark-sidebar: #111827; }
     body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg-color); overflow-x: hidden; }
     
-    /* Layout */
     #wrapper { display: flex; width: 100%; min-height: 100vh; }
     #sidebar-wrapper {
       min-height: 100vh; width: var(--sidebar-width); background-color: var(--dark-sidebar); color: #fff;
       position: fixed; left: 0; top: 0; z-index: 1000;
     }
-    
-    .list-group-item { border: none; background: transparent; color: #9ca3af; padding: 12px 25px; cursor: pointer; transition: 0.2s; }
+    .list-group-item { border: none; background: transparent; color: #9ca3af; padding: 12px 25px; cursor: pointer; }
     .list-group-item:hover { color: #fff; background: rgba(255,255,255,0.05); }
     .list-group-item.active { background-color: var(--primary); color: #fff; font-weight: 600; border-left: 4px solid #fff; }
-    .list-group-item i { width: 25px; text-align: center; margin-right: 5px; }
-
+    
     #page-content-wrapper { width: 100%; margin-left: var(--sidebar-width); padding: 20px; }
 
-    /* Controls Bar */
-    .controls-bar { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center; justify-content: space-between; }
-    .search-box { max-width: 300px; flex-grow: 1; }
+    /* Cards & Tables */
+    .card { border: none; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+    .stat-card { transition: transform 0.2s; } .stat-card:hover { transform: translateY(-3px); }
+    .table thead th { background: #1f2937; color: #fff; }
+    .clickable-row { cursor: pointer; } .clickable-row:hover { background-color: #f1f5f9 !important; }
 
-    /* Stats Cards */
-    .stat-card { transition: transform 0.2s; }
-    .stat-card:hover { transform: translateY(-3px); }
-
-    /* Table */
-    .card { border: none; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-    .table thead th { background: #1f2937; color: #fff; border: none; font-weight: 500; font-size: 0.85rem; text-transform: uppercase; }
-    .clickable-row { cursor: pointer; transition: 0.2s; }
-    .clickable-row:hover { background-color: #f1f5f9 !important; }
-
-    /* Pagination */
-    .pagination-bar { display: flex; justify-content: space-between; align-items: center; padding-top: 15px; }
-    .page-info { font-size: 0.9rem; color: #666; }
-
-    /* Badges */
-    .badge-new { background-color: #3b82f6; }
-    .badge-progress { background-color: #f59e0b; color: #000; }
-    .badge-resolved { background-color: #10b981; }
-    .badge-closed { background-color: #6b7280; }
-
-    /* Chat Styling */
+    /* Chat */
     .chat-container { background: #e5ddd5; border-radius: 8px; height: 350px; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 8px; }
     .chat-bubble { max-width: 80%; padding: 8px 12px; border-radius: 8px; font-size: 0.9rem; display: flex; flex-direction: column; }
     .chat-left { align-self: flex-start; background: #fff; }
     .chat-right { align-self: flex-end; background: #dcf8c6; }
-    .chat-meta { font-size: 0.65rem; text-align: right; opacity: 0.6; margin-top: 2px; }
+    
+    /* Select2 Fix */
+    .select2-container { z-index: 9999; width: 100% !important; }
   </style>
 </head>
 <body>
 
 <div id="wrapper">
   <div id="sidebar-wrapper">
-    <div class="p-3 fs-4 fw-bold text-center border-bottom border-secondary text-danger">
-      <i class="fas fa-shield-alt"></i> Admin Panel
-    </div>
-    
+    <div class="p-3 fs-4 fw-bold text-center border-bottom border-secondary text-danger"><i class="fas fa-shield-alt"></i> Admin Panel</div>
     <div class="list-group list-group-flush mt-3">
-      <a id="menu-all" class="list-group-item active" onclick="switchTab('All')">
-        <i class="fas fa-th-list"></i> All Tickets
-      </a>
-      <a id="menu-open" class="list-group-item" onclick="switchTab('Open')">
-        <i class="fas fa-folder-open"></i> Open Tickets
-      </a>
-      <a id="menu-resolved" class="list-group-item" onclick="switchTab('Resolved')">
-        <i class="fas fa-check-circle"></i> Resolved
-      </a>
-      <a id="menu-closed" class="list-group-item" onclick="switchTab('Closed')">
-        <i class="fas fa-archive"></i> Closed
-      </a>
-      
-      <a class="list-group-item text-danger mt-5" onclick="logout()">
-        <i class="fas fa-sign-out-alt"></i> Logout
-      </a>
+      <a id="menu-all" class="list-group-item active" onclick="switchTab('All')"><i class="fas fa-th-list me-2"></i> All Tickets</a>
+      <a id="menu-open" class="list-group-item" onclick="switchTab('Open')"><i class="fas fa-folder-open me-2"></i> Open</a>
+      <a id="menu-resolved" class="list-group-item" onclick="switchTab('Resolved')"><i class="fas fa-check-circle me-2"></i> Resolved</a>
+      <a id="menu-closed" class="list-group-item" onclick="switchTab('Closed')"><i class="fas fa-archive me-2"></i> Closed</a>
+      <a class="list-group-item text-danger mt-5" onclick="logout()"><i class="fas fa-sign-out-alt me-2"></i> Logout</a>
     </div>
-    
-    <div class="mt-auto p-3 text-center small text-secondary">
-      User: <span id="displayUser" class="text-white">Admin</span>
-    </div>
+    <div class="mt-auto p-3 text-center small text-secondary">User: <span id="displayUser" class="text-white">Admin</span></div>
   </div>
 
   <div id="page-content-wrapper">
     
     <div class="d-flex justify-content-between align-items-center mb-3">
       <h3 class="fw-bold text-dark">Ticket Management</h3>
-      <button class="btn btn-outline-dark btn-sm" onclick="initFetch()"><i class="fas fa-sync"></i> Refresh Data</button>
+      <div>
+        <button class="btn btn-primary btn-sm me-2" onclick="openCreateModal()"><i class="fas fa-plus"></i> Create Ticket</button>
+        <button class="btn btn-outline-dark btn-sm" onclick="initFetch()"><i class="fas fa-sync"></i> Refresh</button>
+      </div>
     </div>
 
     <div class="row g-3 mb-4">
-      <div class="col-md-3 col-6">
-        <div class="card stat-card p-3 border-start border-4 border-primary">
-          <small class="text-muted fw-bold text-uppercase">Total Tickets</small>
-          <h3 class="fw-bold mb-0 text-primary" id="statTotal">0</h3>
-        </div>
-      </div>
-      <div class="col-md-3 col-6">
-        <div class="card stat-card p-3 border-start border-4 border-warning">
-          <small class="text-muted fw-bold text-uppercase">Open</small>
-          <h3 class="fw-bold mb-0 text-warning" id="statOpen">0</h3>
-        </div>
-      </div>
-      <div class="col-md-3 col-6">
-        <div class="card stat-card p-3 border-start border-4 border-success">
-          <small class="text-muted fw-bold text-uppercase">Resolved</small>
-          <h3 class="fw-bold mb-0 text-success" id="statResolved">0</h3>
-        </div>
-      </div>
-      <div class="col-md-3 col-6">
-        <div class="card stat-card p-3 border-start border-4 border-secondary">
-          <small class="text-muted fw-bold text-uppercase">Closed</small>
-          <h3 class="fw-bold mb-0 text-secondary" id="statClosed">0</h3>
-        </div>
-      </div>
+      <div class="col-md-3 col-6"><div class="card stat-card p-3 border-start border-4 border-primary"><small class="text-muted fw-bold">TOTAL</small><h3 class="fw-bold mb-0 text-primary" id="statTotal">0</h3></div></div>
+      <div class="col-md-3 col-6"><div class="card stat-card p-3 border-start border-4 border-warning"><small class="text-muted fw-bold">OPEN</small><h3 class="fw-bold mb-0 text-warning" id="statOpen">0</h3></div></div>
+      <div class="col-md-3 col-6"><div class="card stat-card p-3 border-start border-4 border-success"><small class="text-muted fw-bold">RESOLVED</small><h3 class="fw-bold mb-0 text-success" id="statResolved">0</h3></div></div>
+      <div class="col-md-3 col-6"><div class="card stat-card p-3 border-start border-4 border-secondary"><small class="text-muted fw-bold">CLOSED</small><h3 class="fw-bold mb-0 text-secondary" id="statClosed">0</h3></div></div>
     </div>
 
-    <div class="controls-bar">
-      <div class="search-box input-group">
+    <div class="card p-3 mb-3 d-flex flex-row justify-content-between">
+      <div class="input-group" style="max-width: 300px;">
         <span class="input-group-text bg-white"><i class="fas fa-search"></i></span>
-        <input type="text" id="searchInput" class="form-control" placeholder="Search ID, Name, Email..." onkeyup="handleSearch()">
+        <input type="text" id="searchInput" class="form-control" placeholder="Search..." onkeyup="handleSearch()">
       </div>
-      
-      <div class="d-flex align-items-center gap-2">
-        <label class="small fw-bold">Rows:</label>
-        <select id="rowsPerPage" class="form-select form-select-sm" onchange="changeRows()">
-          <option value="10">10</option>
-          <option value="20" selected>20</option>
-          <option value="50">50</option>
-          <option value="100">100</option>
-          <option value="9999">All</option>
-        </select>
-      </div>
+      <select id="rowsPerPage" class="form-select w-auto" onchange="changeRows()"><option value="10">10</option><option value="20" selected>20</option><option value="50">50</option></select>
     </div>
 
     <div class="card shadow-sm">
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
-          <thead>
-            <tr>
-              <th class="ps-3">ID</th>
-              <th>User</th>
-              <th>Subject</th>
-              <th>Priority</th>
-              <th>Status</th>
-              <th>Date</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody id="adminBody">
-            <tr><td colspan="7" class="text-center py-5 text-muted"><i class="fas fa-spinner fa-spin"></i> Loading Data...</td></tr>
-          </tbody>
+          <thead><tr><th class="ps-3">ID</th><th>User</th><th>Subject</th><th>Priority</th><th>Status</th><th>Date</th></tr></thead>
+          <tbody id="adminBody"><tr><td colspan="6" class="text-center py-5">Loading...</td></tr></tbody>
         </table>
       </div>
-      
-      <div class="card-footer bg-white pagination-bar">
-        <div class="page-info">Showing <span id="startRow">0</span> to <span id="endRow">0</span> of <span id="visibleTotal">0</span> entries</div>
-        <div class="btn-group">
-          <button class="btn btn-outline-secondary btn-sm" id="prevBtn" onclick="changePage(-1)" disabled>Previous</button>
-          <button class="btn btn-outline-secondary btn-sm" id="nextBtn" onclick="changePage(1)" disabled>Next</button>
-        </div>
+      <div class="card-footer bg-white d-flex justify-content-between p-3">
+        <small class="text-muted">Showing <span id="startRow">0</span>-<span id="endRow">0</span> of <span id="visibleTotal">0</span></small>
+        <div class="btn-group"><button class="btn btn-sm btn-outline-secondary" id="prevBtn" onclick="changePage(-1)">Prev</button><button class="btn btn-sm btn-outline-secondary" id="nextBtn" onclick="changePage(1)">Next</button></div>
       </div>
     </div>
-
   </div>
 </div>
 
 <div class="modal fade" id="adminModal" tabindex="-1" data-bs-backdrop="static">
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content">
-      <div class="modal-header bg-dark text-white">
-        <h5 class="modal-title">Manage Ticket #<span id="modalId"></span></h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-      </div>
+      <div class="modal-header bg-dark text-white"><h5 class="modal-title">Ticket #<span id="modalId"></span></h5><button class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
       <div class="modal-body bg-light">
-        <div class="card border-0 shadow-sm mb-3 p-2">
-          <div class="row text-center small">
-            <div class="col-4 border-end">User: <strong class="text-primary" id="modalUser"></strong></div>
-            <div class="col-4 border-end">Priority: <strong id="modalPriority"></strong></div>
-            <div class="col-4">Status: <strong id="modalStatusDisplay"></strong></div>
-          </div>
-          <div class="px-3 pb-2 small text-dark border-top pt-2 mt-2" id="modalDesc"></div>
-        </div>
-
-        <h6 class="fw-bold text-secondary px-1">Discussion</h6>
-        <div id="chatWindow" class="chat-container mb-0" style="border-bottom-left-radius: 0; border-bottom-right-radius: 0;"></div>
-
-        <div class="bg-white p-2 border border-top-0 rounded-bottom d-flex gap-2">
-          <select id="updateStatus" class="form-select w-auto fw-bold text-primary">
-            <option value="New">New</option>
-            <option value="In Progress">In Progress</option>
-            <option value="Pending">Pending</option>
-            <option value="Resolved">Resolved</option>
-            <option value="Closed">Closed</option>
-          </select>
+        <div class="card border-0 shadow-sm mb-3 p-2 row text-center small"><div class="col-4">User: <strong id="modalUser" class="text-primary"></strong></div><div class="col-4">Priority: <strong id="modalPriority"></strong></div><div class="col-4">Status: <strong id="modalStatusDisplay"></strong></div></div>
+        <div class="px-2 pb-2 small text-dark" id="modalDesc"></div>
+        <div id="chatWindow" class="chat-container mb-0"></div>
+        <div class="bg-white p-2 border d-flex gap-2">
+          <select id="updateStatus" class="form-select w-auto fw-bold text-primary"><option>New</option><option>In Progress</option><option>Resolved</option><option>Closed</option></select>
           <input type="text" id="adminMsg" class="form-control" placeholder="Reply..." onkeypress="handleEnter(event)">
           <button class="btn btn-primary" id="sendBtn" onclick="sendUpdate()"><i class="fas fa-paper-plane"></i></button>
         </div>
@@ -211,207 +114,176 @@
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-  // *** API URL ***
-  const API_URL = "https://script.google.com/macros/s/AKfycbwph1zPPyg0WfW2V_Jq-umvIDC3on6NlgSGpmCbz1V5fBfL3HAPClp9PL2cc-HP1xii/exec"; // UPDATE THIS
+<div class="modal fade" id="createModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white"><h5 class="modal-title">Create Ticket for User</h5><button class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <form id="createForm">
+          <div class="mb-3">
+            <label class="fw-bold small">Select User</label>
+            <select id="userSelect" class="form-select select2-init" style="width: 100%;" required>
+              <option value="">Loading users...</option>
+            </select>
+          </div>
+          <div class="mb-3"><label class="fw-bold small">Subject</label><select id="newSubject" class="form-select"><option>Hardware</option><option>Software</option><option>Network</option><option>Other</option></select></div>
+          <div class="mb-3"><label class="fw-bold small">Priority</label><select id="newPriority" class="form-select"><option>Low</option><option selected>Medium</option><option>High</option></select></div>
+          <div class="mb-3"><label class="fw-bold small">Description</label><textarea id="newDesc" class="form-control" rows="3" required></textarea></div>
+          <button type="submit" id="createBtn" class="btn btn-danger w-100">Create Ticket</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
 
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+  const API_URL = "https://script.google.com/macros/s/AKfycbwph1zPPyg0WfW2V_Jq-umvIDC3on6NlgSGpmCbz1V5fBfL3HAPClp9PL2cc-HP1xii/exec"; // UPDATE THIS
   const userId = sessionStorage.getItem('userId');
   const role = sessionStorage.getItem('role');
 
   if(role !== 'Admin') window.location.href = 'index.html';
   document.getElementById('displayUser').innerText = userId;
 
-  // GLOBAL VARIABLES
-  let fullData = [];
-  let filteredData = [];
-  let currentPage = 1;
-  let rowsPerPage = 20;
-  let currentTab = 'All';
-  let currentTicketId = null;
+  let fullData = [], filteredData = [], currentPage = 1, rowsPerPage = 20, currentTab = 'All', currentTicketId = null;
 
-  window.onload = () => initFetch();
+  window.onload = () => { initFetch(); fetchUsers(); };
 
-  // --- FETCH DATA ---
   function initFetch() {
     fetch(`${API_URL}?action=getAdminData&userId=${userId}`)
       .then(res => res.json())
-      .then(data => {
-        fullData = data || [];
-        updateDashboardStats(); // Calculate stats
-        applyFilters(); // Initial render
-      })
-      .catch(err => console.error(err));
+      .then(data => { fullData = data || []; updateStats(); applyFilters(); });
   }
 
-  // --- CALCULATE STATS ---
-  function updateDashboardStats() {
-    const total = fullData.length;
-    // Open = Not Resolved AND Not Closed
-    const open = fullData.filter(t => t.status !== 'Resolved' && t.status !== 'Closed').length;
-    const resolved = fullData.filter(t => t.status === 'Resolved').length;
-    const closed = fullData.filter(t => t.status === 'Closed').length;
-
-    document.getElementById('statTotal').innerText = total;
-    document.getElementById('statOpen').innerText = open;
-    document.getElementById('statResolved').innerText = resolved;
-    document.getElementById('statClosed').innerText = closed;
+  // --- FETCH USER LIST FOR DROPDOWN ---
+  function fetchUsers() {
+    fetch(`${API_URL}?action=getUsers`)
+      .then(res => res.json())
+      .then(users => {
+        const sel = $('#userSelect');
+        sel.empty().append('<option value="">Select a User</option>');
+        users.forEach(u => sel.append(new Option(u, u)));
+        sel.select2({ theme: 'bootstrap-5', dropdownParent: $('#createModal') });
+      });
   }
 
-  // --- FILTER & SEARCH ---
+  function updateStats() {
+    document.getElementById('statTotal').innerText = fullData.length;
+    document.getElementById('statOpen').innerText = fullData.filter(t => t.status !== 'Resolved' && t.status !== 'Closed').length;
+    document.getElementById('statResolved').innerText = fullData.filter(t => t.status === 'Resolved').length;
+    document.getElementById('statClosed').innerText = fullData.filter(t => t.status === 'Closed').length;
+  }
+
   function applyFilters() {
     const search = document.getElementById('searchInput').value.toLowerCase();
-    
-    // Tab Filter
     let temp = fullData;
-    if (currentTab === 'Open') {
-      temp = fullData.filter(t => t.status !== 'Resolved' && t.status !== 'Closed');
-    } else if (currentTab === 'Resolved') {
-      temp = fullData.filter(t => t.status === 'Resolved');
-    } else if (currentTab === 'Closed') {
-      temp = fullData.filter(t => t.status === 'Closed');
-    }
+    if (currentTab === 'Open') temp = temp.filter(t => t.status !== 'Resolved' && t.status !== 'Closed');
+    else if (currentTab === 'Resolved') temp = temp.filter(t => t.status === 'Resolved');
+    else if (currentTab === 'Closed') temp = temp.filter(t => t.status === 'Closed');
 
-    // Search Filter
-    if (search) {
-      temp = temp.filter(t => 
-        (t.id && t.id.toString().toLowerCase().includes(search)) ||
-        (t.user && t.user.toLowerCase().includes(search)) ||
-        (t.subject && t.subject.toLowerCase().includes(search)) ||
-        (t.status && t.status.toLowerCase().includes(search))
-      );
-    }
-
-    filteredData = temp;
-    currentPage = 1;
-    renderPagination();
+    if (search) temp = temp.filter(t => JSON.stringify(t).toLowerCase().includes(search));
+    filteredData = temp; currentPage = 1; renderTable();
   }
 
-  // --- RENDER PAGINATION ---
-  function renderPagination() {
-    const total = filteredData.length;
-    const start = (currentPage - 1) * rowsPerPage;
-    const end = start + parseInt(rowsPerPage);
+  function renderTable() {
+    const start = (currentPage - 1) * rowsPerPage, end = start + rowsPerPage, pageData = filteredData.slice(start, end);
+    const tbody = document.getElementById('adminBody'); tbody.innerHTML = '';
     
-    const pageData = filteredData.slice(start, end);
-    const tbody = document.getElementById('adminBody');
-    tbody.innerHTML = '';
+    if(!pageData.length) { tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5">No tickets.</td></tr>'; return; }
+
+    pageData.forEach(t => {
+      let cls = t.status==='New'?'badge-new':(t.status==='Resolved'?'badge-resolved':(t.status==='Closed'?'badge-closed':'badge-progress'));
+      tbody.innerHTML += `<tr class="clickable-row" onclick="openAdminModal('${t.id}')"><td class="ps-3 fw-bold small">${t.id}</td><td class="text-primary fw-bold small">${t.user}</td><td>${t.subject}</td><td><span class="badge ${t.priority==='High'?'bg-danger':'bg-secondary'}">${t.priority}</span></td><td><span class="badge ${cls}">${t.status}</span></td><td class="small text-muted">${t.date}</td></tr>`;
+    });
     
-    if (pageData.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted">No tickets found matching criteria.</td></tr>';
-    } else {
-      pageData.forEach(t => {
-        let cls = t.status==='New'?'badge-new':(t.status==='Resolved'?'badge-resolved':(t.status==='Closed'?'badge-closed':'badge-progress'));
-        tbody.innerHTML += `
-          <tr class="clickable-row" onclick="openAdminModal('${t.id}')">
-            <td class="ps-3 fw-bold small text-dark">${t.id}</td>
-            <td class="text-primary fw-bold small">${t.user}</td>
-            <td>${t.subject}</td>
-            <td><span class="badge ${t.priority==='High'?'bg-danger':'bg-dark'}">${t.priority}</span></td>
-            <td><span class="badge ${cls} rounded-pill px-3">${t.status}</span></td>
-            <td class="text-muted small">${t.date}</td>
-            <td><button class="btn btn-sm btn-outline-dark py-0">Edit</button></td>
-          </tr>`;
-      });
-    }
-
-    // Update Counts
-    document.getElementById('visibleTotal').innerText = total;
-    document.getElementById('startRow').innerText = total === 0 ? 0 : start + 1;
-    document.getElementById('endRow').innerText = Math.min(end, total);
-
+    document.getElementById('visibleTotal').innerText = filteredData.length;
+    document.getElementById('startRow').innerText = filteredData.length ? start + 1 : 0;
+    document.getElementById('endRow').innerText = Math.min(end, filteredData.length);
     document.getElementById('prevBtn').disabled = currentPage === 1;
-    document.getElementById('nextBtn').disabled = end >= total;
+    document.getElementById('nextBtn').disabled = end >= filteredData.length;
   }
 
-  // --- CONTROLS ---
-  function handleSearch() { applyFilters(); }
-  function changeRows() { rowsPerPage = parseInt(document.getElementById('rowsPerPage').value); applyFilters(); }
-  function changePage(dir) { currentPage += dir; renderPagination(); }
-
-  function switchTab(tabName) {
-    currentTab = tabName;
-    document.querySelectorAll('.list-group-item').forEach(el => el.classList.remove('active'));
-    
-    let menuId = 'menu-all';
-    if(tabName === 'Open') menuId = 'menu-open';
-    if(tabName === 'Resolved') menuId = 'menu-resolved';
-    if(tabName === 'Closed') menuId = 'menu-closed';
-    document.getElementById(menuId).classList.add('active');
-    
-    applyFilters();
-  }
-
-  // --- MODAL & CHAT ---
   function openAdminModal(id) {
     currentTicketId = id;
     const t = fullData.find(x => x.id === id);
     if(!t) return;
-
     document.getElementById('modalId').innerText = t.id;
     document.getElementById('modalUser').innerText = t.user;
     document.getElementById('modalPriority').innerText = t.priority;
     document.getElementById('modalStatusDisplay').innerText = t.status;
     document.getElementById('modalDesc').innerText = t.desc;
     document.getElementById('updateStatus').value = t.status;
-
     loadChat(t.logs, t.user);
     new bootstrap.Modal(document.getElementById('adminModal')).show();
   }
 
   function loadChat(logs, user) {
     const win = document.getElementById('chatWindow'); win.innerHTML = '';
-    if(!logs) { win.innerHTML = '<div class="text-center mt-5 small text-muted">No logs.</div>'; return; }
-
-    const pattern = /^\[(.*?)\] \[(.*?)\]: (.*)$/;
-    logs.split('\n').forEach(line => {
-      if(!line.trim()) return;
-      const m = line.match(pattern);
-      let time="", u="", msg=line;
-      if(m) { time=m[1]; u=m[2]; msg=m[3]; }
-
-      // Admin logic: If I sent it (Admin) or User ID matches session, Right Side
-      const isMe = u === 'Admin' || u.toLowerCase() === userId.toLowerCase(); 
-      
-      win.innerHTML += `
-        <div class="chat-bubble ${isMe?'chat-right':'chat-left'}">
-          <div style="font-size:0.65rem; font-weight:bold; color:${isMe?'#004d40':'#d63384'}">${u}</div>
-          <span>${msg}</span><div class="chat-meta">${time}</div>
-        </div>`;
+    if(!logs) return;
+    const p = /^\[(.*?)\] \[(.*?)\]: (.*)$/;
+    logs.split('\n').forEach(l => {
+      if(!l.trim()) return;
+      const m = l.match(p); let time="", u="", msg=l; if(m){ time=m[1]; u=m[2]; msg=m[3]; }
+      const isMe = u === 'Admin' || u.toLowerCase() === userId.toLowerCase();
+      win.innerHTML += `<div class="chat-bubble ${isMe?'chat-right':'chat-left'}"><div style="font-size:0.6rem; font-weight:bold; color:${isMe?'#004d40':'#d63384'}">${u}</div><span>${msg}</span><div class="chat-meta">${time}</div></div>`;
     });
     setTimeout(() => win.scrollTop = win.scrollHeight, 100);
   }
 
   function sendUpdate() {
     const msg = document.getElementById('adminMsg').value;
-    const status = document.getElementById('updateStatus').value;
+    const st = document.getElementById('updateStatus').value;
     const btn = document.getElementById('sendBtn'); btn.disabled=true;
-
-    fetch(API_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'adminUpdate', ticketId: currentTicketId, userId: userId, message: msg, status: status })
-    })
-    .then(res => res.json())
-    .then(data => {
-      if(data.success) {
-        document.getElementById('adminMsg').value = '';
-        // Update Local Data Instantly
+    
+    fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'adminUpdate', ticketId: currentTicketId, userId, message: msg, status: st }) })
+    .then(r=>r.json()).then(d => {
+      if(d.success) { 
+        document.getElementById('adminMsg').value=''; 
         const t = fullData.find(x => x.id === currentTicketId);
-        if(t) {
-           t.status = status; 
-           if(msg) t.logs += `\n[Now] [Admin]: ${msg}`; 
-        }
-        
-        updateDashboardStats(); // Update stats cards
-        applyFilters(); // Re-render list
-        
-        document.getElementById('modalStatusDisplay').innerText = status;
-        loadChat(t.logs, t.user);
-      } else alert("Error updating");
-    })
-    .finally(() => { btn.disabled = false; });
+        if(t) { t.status = st; if(msg) t.logs += `\n[Now] [Admin]: ${msg}`; }
+        applyFilters(); updateStats(); document.getElementById('modalStatusDisplay').innerText = st; loadChat(t.logs, t.user);
+      }
+    }).finally(() => btn.disabled=false);
   }
 
+  // --- CREATE TICKET FOR USER ---
+  function openCreateModal() { new bootstrap.Modal(document.getElementById('createModal')).show(); }
+
+  document.getElementById('createForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const selUser = $('#userSelect').val();
+    if(!selUser) { alert("Please select a user"); return; }
+    
+    const btn = document.getElementById('createBtn'); btn.disabled=true; btn.innerText="Creating...";
+    
+    const payload = {
+      action: 'createTicket',
+      userId: selUser, // Ticket Owner
+      creatorId: userId, // Creator (Admin)
+      subject: document.getElementById('newSubject').value,
+      priority: document.getElementById('newPriority').value,
+      desc: document.getElementById('newDesc').value
+    };
+
+    fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) })
+    .then(r=>r.json()).then(d => {
+      if(d.success) {
+        bootstrap.Modal.getInstance(document.getElementById('createModal')).hide();
+        document.getElementById('createForm').reset();
+        $('#userSelect').val(null).trigger('change');
+        alert("Ticket Created Successfully!");
+        initFetch();
+      } else alert(d.message);
+    }).finally(() => { btn.disabled=false; btn.innerText="Create Ticket"; });
+  });
+
+  function handleSearch() { applyFilters(); }
+  function changeRows() { rowsPerPage = parseInt(document.getElementById('rowsPerPage').value); applyFilters(); }
+  function changePage(d) { currentPage += d; renderTable(); }
+  function switchTab(t) { currentTab=t; document.querySelectorAll('.list-group-item').forEach(el=>el.classList.remove('active')); event.currentTarget.classList.add('active'); applyFilters(); }
   function handleEnter(e) { if(e.key === 'Enter') sendUpdate(); }
   function logout() { sessionStorage.clear(); window.location.href = 'index.html'; }
 </script>
