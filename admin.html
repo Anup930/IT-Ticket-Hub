@@ -316,13 +316,9 @@
         </div>
         <div class="col-md-6 text-md-end">
           <select id="rowsPerPage" class="form-select d-inline-block w-auto border-0 bg-light" onchange="changeRows()">
-            <option value="10" selected>10 rows</option>
-            <option value="20">20 rows</option>
+            <option value="10">10 rows</option>
+            <option value="20" selected>20 rows</option>
             <option value="50">50 rows</option>
-            <option value="100">100 rows</option>
-            <option value="200">200 rows</option>
-            <option value="500">500 rows</option>
-            <option value="1000">1000 rows</option>
           </select>
         </div>
       </div>
@@ -476,6 +472,7 @@
               <option>Application Error / Crashing</option>
               <option>Zoom not Working</option>
               <option>Issue Related Sophos</option>
+              <option>Excel is not working</option>
               <option>Issue Related Tally</option>
               <option>Other</option>
               </select>
@@ -504,7 +501,7 @@
 
 <script>
   // *** PASTE YOUR GOOGLE APPS SCRIPT URL HERE ***
-  const API_URL = "https://script.google.com/macros/s/AKfycbzBcGQH3pVWo1AyG6yJbhhwNs6Jxtxo1eUxxAJ113IFHkKG7AmdJZmQMZeiUVk0loYf/exec";
+  const API_URL = "https://script.google.com/macros/s/AKfycbzOk6hCXbs51Hddw322AY4wMyw6xYQxK2O_uh6ui28pU4BsiOmtLsLBjSC0Od7igvjH/exec";
 
   // Auth Check
   const userId = sessionStorage.getItem('userId');
