@@ -166,6 +166,47 @@
       transform: none;
     }
 
+    /* --- Links --- */
+    .extra-links {
+      display: flex;
+      justify-content: space-between;
+      margin-top: -10px;
+      margin-bottom: 15px;
+    }
+
+    .link-text {
+        color: rgba(255,255,255,0.6);
+        font-size: 0.85rem;
+        text-decoration: none;
+        transition: 0.2s;
+        cursor: pointer;
+    }
+    .link-text:hover { color: white; text-decoration: underline; }
+
+    /* --- Modal Styles --- */
+    .modal-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.6); backdrop-filter: blur(5px);
+        z-index: 100; display: none; justify-content: center; align-items: center;
+        opacity: 0; transition: opacity 0.3s;
+    }
+    .modal-overlay.active { display: flex; opacity: 1; }
+    
+    .modal-content {
+        background: #1e293b; 
+        border: 1px solid rgba(255,255,255,0.1);
+        padding: 30px; border-radius: 20px; width: 90%; max-width: 350px;
+        text-align: center; color: white;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        transform: scale(0.9); transition: transform 0.3s;
+    }
+    .modal-overlay.active .modal-content { transform: scale(1); }
+
+    .modal-close {
+        position: absolute; top: 15px; right: 15px; color: rgba(255,255,255,0.5);
+        cursor: pointer; font-size: 1.2rem;
+    }
+
     /* --- Messages --- */
     #msg {
       min-height: 24px;
@@ -177,15 +218,10 @@
     .text-danger { color: #ff6b6b; }
     .text-success { color: #51cf66; }
 
-    /* --- Animations --- */
     @keyframes fadeInUp {
       from { opacity: 0; transform: translateY(20px); }
       to { opacity: 1; transform: translateY(0); }
     }
-
-    /* Utility to hide/show */
-    .hidden { display: none; }
-
   </style>
 </head>
 <body>
@@ -221,6 +257,11 @@
           </div>
         </div>
 
+        <div class="extra-links">
+            <a class="link-text" onclick="openChangePassModal()">Change Password?</a>
+            <a class="link-text" onclick="openForgotModal()">Forgot Password?</a>
+        </div>
+
         <button type="submit" id="loginBtn" class="btn-login">
           <span>Login</span>
         </button>
@@ -230,21 +271,71 @@
     </div>
   </div>
 
+  <div class="modal-overlay" id="forgotModal">
+      <div class="modal-content">
+          <i class="fa-solid fa-xmark modal-close" onclick="closeModal('forgotModal')"></i>
+          <div style="font-size: 2.5rem; color: #a855f7; margin-bottom: 15px;">
+              <i class="fa-solid fa-envelope"></i>
+          </div>
+          <h3 style="margin-bottom: 10px;">Forgot Password</h3>
+          <p style="color: rgba(255,255,255,0.6); font-size: 0.9rem; margin-bottom: 20px;">
+              Enter your User ID or Email. We will send a temporary password.
+          </p>
+          
+          <div class="input-wrapper mb-3" style="margin-bottom: 20px; text-align: left;">
+            <input type="text" id="forgotInput" class="form-control" placeholder="User ID or Email">
+            <i class="fa-solid fa-user"></i>
+          </div>
+
+          <button id="resetBtn" class="btn-login" onclick="requestForgot()">Send New Password</button>
+          <div id="forgotMsg" style="margin-top: 10px; font-size: 0.85rem;"></div>
+      </div>
+  </div>
+
+  <div class="modal-overlay" id="changePassModal">
+      <div class="modal-content" style="max-width: 400px;">
+          <i class="fa-solid fa-xmark modal-close" onclick="closeModal('changePassModal')"></i>
+          <h3 style="margin-bottom: 20px; color: #6366f1;">Change Password</h3>
+          
+          <div style="text-align: left; display: flex; flex-direction: column; gap: 15px;">
+              <div class="input-wrapper">
+                <input type="text" id="cpUser" class="form-control" placeholder="User ID / Email">
+                <i class="fa-solid fa-user"></i>
+              </div>
+              <div class="input-wrapper">
+                <input type="password" id="cpOld" class="form-control" placeholder="Current Password">
+                <i class="fa-solid fa-lock"></i>
+              </div>
+              <div class="input-wrapper">
+                <input type="password" id="cpNew" class="form-control" placeholder="New Password">
+                <i class="fa-solid fa-key"></i>
+              </div>
+              <div class="input-wrapper">
+                <input type="password" id="cpConfirm" class="form-control" placeholder="Confirm New Password">
+                <i class="fa-solid fa-check-double"></i>
+              </div>
+          </div>
+
+          <button id="changeBtn" class="btn-login" style="margin-top: 20px;" onclick="submitChangePass()">Update Password</button>
+          <div id="changeMsg" style="margin-top: 10px; font-size: 0.85rem;"></div>
+      </div>
+  </div>
+
   <script>
-    // *** YOUR EXISTING URL IS PRESERVED HERE ***
+    // *** PASTE YOUR DEPLOYED URL HERE ***
     const API_URL = "https://script.google.com/macros/s/AKfycbzOk6hCXbs51Hddw322AY4wMyw6xYQxK2O_uh6ui28pU4BsiOmtLsLBjSC0Od7igvjH/exec";
 
+    // --- LOGIN LOGIC ---
     document.getElementById('loginForm').addEventListener('submit', function(e) {
       e.preventDefault();
       
       const btn = document.getElementById('loginBtn');
       const msg = document.getElementById('msg');
-      const originalBtnContent = btn.innerHTML; // Save original button text
+      const originalBtnContent = btn.innerHTML; 
 
-      // UI Loading State
       btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Verifying...';
       btn.disabled = true;
-      msg.textContent = ''; // Clear previous messages
+      msg.textContent = ''; 
 
       const payload = {
         action: 'login',
@@ -252,45 +343,141 @@
         password: document.getElementById('password').value
       };
 
-      fetch(API_URL, {
-        method: 'POST',
-        body: JSON.stringify(payload)
-      })
+      fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) })
       .then(res => res.json())
       .then(data => {
         if(data.success) {
-          // Success State
           msg.className = "text-success";
           msg.textContent = "Login Successful! Redirecting...";
-          
           sessionStorage.setItem('userId', data.userId);
           sessionStorage.setItem('role', data.role);
           
-          // Slight delay for UX smoothness
           setTimeout(() => {
-            if(data.role === 'Admin') {
-              window.location.href = 'admin.html';
-            } else {
-              window.location.href = 'user.html';
-            }
+            if(data.role === 'Admin') window.location.href = 'admin.html';
+            else window.location.href = 'user.html';
           }, 800);
-
         } else {
-          // Error State
           msg.className = "text-danger";
           msg.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> ' + data.message;
-          btn.innerHTML = originalBtnContent; // Restore button text
+          btn.innerHTML = originalBtnContent;
           btn.disabled = false;
         }
       })
       .catch(err => {
-        console.error(err);
         msg.className = "text-danger";
         msg.textContent = "Server Connection Error";
         btn.innerHTML = originalBtnContent;
         btn.disabled = false;
       });
     });
+
+    // --- MODAL UTILS ---
+    function openForgotModal() {
+        document.getElementById('forgotModal').classList.add('active');
+        document.getElementById('forgotMsg').textContent = '';
+        document.getElementById('forgotInput').value = '';
+    }
+
+    function openChangePassModal() {
+        document.getElementById('changePassModal').classList.add('active');
+        document.getElementById('changeMsg').textContent = '';
+        // Clear inputs
+        ['cpUser','cpOld','cpNew','cpConfirm'].forEach(id => document.getElementById(id).value = '');
+    }
+
+    function closeModal(id) {
+        document.getElementById(id).classList.remove('active');
+    }
+
+    // Close on click outside
+    window.onclick = function(event) {
+        if (event.target.classList.contains('modal-overlay')) {
+            event.target.classList.remove('active');
+        }
+    }
+
+    // --- 1. FORGOT PASSWORD (EMAIL TEMP PASS) ---
+    function requestForgot() {
+        const input = document.getElementById('forgotInput').value;
+        const msg = document.getElementById('forgotMsg');
+        const btn = document.getElementById('resetBtn');
+
+        if(!input) {
+            msg.className = "text-danger";
+            msg.textContent = "Please enter User ID or Email";
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Sending...';
+        msg.textContent = "";
+
+        fetch(API_URL, { 
+            method: 'POST', 
+            body: JSON.stringify({ action: 'forgotPassword', userId: input }) 
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                msg.className = "text-success";
+                msg.textContent = data.message;
+                setTimeout(() => closeModal('forgotModal'), 3000); 
+            } else {
+                msg.className = "text-danger";
+                msg.textContent = data.message;
+            }
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = "Send New Password";
+        });
+    }
+
+    // --- 2. CHANGE PASSWORD (MANUAL UPDATE) ---
+    function submitChangePass() {
+        const user = document.getElementById('cpUser').value;
+        const oldPass = document.getElementById('cpOld').value;
+        const newPass = document.getElementById('cpNew').value;
+        const confirmPass = document.getElementById('cpConfirm').value;
+        const msg = document.getElementById('changeMsg');
+        const btn = document.getElementById('changeBtn');
+
+        // Validation
+        if(!user || !oldPass || !newPass || !confirmPass) {
+            msg.className = "text-danger"; msg.textContent = "All fields are required"; return;
+        }
+        if(newPass !== confirmPass) {
+            msg.className = "text-danger"; msg.textContent = "New passwords do not match"; return;
+        }
+
+        btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Updating...';
+        msg.textContent = "";
+
+        fetch(API_URL, { 
+            method: 'POST', 
+            body: JSON.stringify({ 
+                action: 'changePassword', 
+                userId: user, 
+                oldPassword: oldPass, 
+                newPassword: newPass 
+            }) 
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                msg.className = "text-success";
+                msg.textContent = data.message;
+                setTimeout(() => closeModal('changePassModal'), 2000); 
+            } else {
+                msg.className = "text-danger";
+                msg.textContent = data.message;
+            }
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = "Update Password";
+        });
+    }
   </script>
 </body>
 </html>
