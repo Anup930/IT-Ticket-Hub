@@ -247,6 +247,9 @@
       <a href="notification.html" class="list-group-item rounded">
         <i class="fas fa-bell me-3"></i> Notifications
       </a>
+      <a href="users.html" class="list-group-item rounded">
+        <i class="fas fa-bell me-3"></i> manage Users
+      </a>
     </div>
 
     <div class="sidebar-footer">
@@ -513,11 +516,14 @@
   document.getElementById('userInitial').innerText = userId.charAt(0).toUpperCase();
 
   let fullData = [], filteredData = [], currentPage = 1, rowsPerPage = 20, currentTab = 'All', currentTicketId = null;
+  
+  // *** FIX: SUBMISSION LOCK FLAG ***
+  let isSubmitting = false; 
 
   window.onload = () => { 
     initFetch(); 
     fetchUsers();
-    initUrgentPopup(); // <-- Start 10s Timer
+    initUrgentPopup(); 
   };
 
   function initFetch() {
@@ -533,7 +539,6 @@
   // *** URGENT POPUP LOGIC ***
   function initUrgentPopup() {
     setTimeout(() => {
-      // Filter: Status not Resolved/Closed AND Priority is High
       const highPrioTickets = fullData.filter(t => 
         t.priority === 'High' && 
         t.status !== 'Resolved' && 
@@ -542,14 +547,11 @@
 
       const totalOpen = fullData.filter(t => t.status !== 'Resolved' && t.status !== 'Closed').length;
 
-      // Only show if high priority tickets exist
       if (highPrioTickets.length === 0) return; 
 
-      // Update Counts
       document.getElementById('popupTotalOpen').innerText = totalOpen;
       document.getElementById('popupHighCount').innerText = highPrioTickets.length;
 
-      // Generate List (Max 3)
       const listContainer = document.getElementById('urgentList');
       listContainer.innerHTML = '';
 
@@ -575,7 +577,7 @@
 
       new bootstrap.Modal(document.getElementById('urgentPopup')).show();
 
-    }, 10000); // 10 Second Delay
+    }, 10000); 
   }
 
   function fetchUsers() {
@@ -598,13 +600,11 @@
   function applyFilters() {
     const search = document.getElementById('searchInput').value.toLowerCase();
     
-    // Tab Filter
     let temp = fullData;
     if (currentTab === 'Open') temp = fullData.filter(t => t.status !== 'Resolved' && t.status !== 'Closed');
     else if (currentTab === 'Resolved') temp = fullData.filter(t => t.status === 'Resolved');
     else if (currentTab === 'Closed') temp = fullData.filter(t => t.status === 'Closed');
 
-    // Search Filter
     if (search) {
       temp = temp.filter(t => 
         (t.id && t.id.toLowerCase().includes(search)) ||
@@ -748,12 +748,22 @@
 
   function openCreateModal() { new bootstrap.Modal(document.getElementById('createModal')).show(); }
   
+  // *** FIX: PREVENT DOUBLE SUBMISSION ***
   document.getElementById('createForm').addEventListener('submit', function(e) {
     e.preventDefault();
+
+    // 1. Check if already submitting
+    if (isSubmitting) return; 
+
     const selUser = $('#userSelect').val();
     if(!selUser) { alert("Please select a user"); return; }
     
-    const btn = document.getElementById('createBtn'); btn.disabled=true; btn.innerText="Creating...";
+    // 2. Lock Submission
+    isSubmitting = true; 
+
+    const btn = document.getElementById('createBtn'); 
+    btn.disabled = true; 
+    btn.innerText = "Creating...";
     
     fetch(API_URL, { 
       method: 'POST', 
@@ -775,7 +785,14 @@
         initFetch(); 
       } 
       else alert(d.message);
-    }).finally(() => { btn.disabled=false; btn.innerText="Create Ticket"; });
+    })
+    .catch(err => alert("Error: " + err))
+    .finally(() => { 
+      // 3. Unlock Submission
+      isSubmitting = false; 
+      btn.disabled = false; 
+      btn.innerText = "Create Ticket"; 
+    });
   });
 
   function logout() { sessionStorage.clear(); window.location.href = 'index.html'; }
